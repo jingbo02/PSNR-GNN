@@ -7,23 +7,19 @@ import dgl
 import DataProcess
 
 class GCN(nn.Module):
-    def __init__(self, nfeat:int, nhid:int, nclass:int, num_layers:int,activation:str,norm:list,drop:list,residual:str):
+    def __init__(self, nfeat:int, nhid:int, nclass:int, num_layers:int, activation:str, norm:list, drop:list, residual:str):
         super().__init__()
-
         self.num_layers = num_layers
-        self.activation = activation
-        self.norm = norm
-        self.drop = drop
-        self.residual = residual
         self.name = 'GCN_'+ residual
-
+        self.hidden_list = []
         self.convs = nn.ModuleList()
+
+        # Conv Layers
         self.convs.append(GraphConv(nfeat, nhid))
         for i in range(self.numLayers - 1):
             self.convs.append(GraphConv(nhid, nhid))
         self.out_fc = nn.Linear(nhid, nclass)
-
-        self.data_process = DataProcess(num_layers,nfeat,nhid,nclass)
+        self.data_process = DataProcess(num_layers, nfeat, nhid, nclass, residual, drop, norm, activation)
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -32,26 +28,23 @@ class GCN(nn.Module):
         self.out_fc.reset_parameters()
 
     def forward(self, graph, x):
-        h = self.data_process.drop()
-
-
-
-        h = F.dropout(inputs, p=self.dropout, training=self.training)
+        h = self.data_process.drop(graph, x)
         h = self.convs[0](graph, h)
-        if self.batchNorm:
-            h = self.bns[0](h)
-        if self.layerNorm:
-            h = self.ln(h)
-        h = self.activationFunc(h)
-        for i in range(1, self.numLayers):
-            h = F.dropout(h, p=self.dropout, training=self.training)
+        h = self.data_process.norm(h)
+        h = self.data_process.activation(h)
+        h = self.data_process.residual(h)
+        self.hidden_list.append(h)
+        
+        for i in range(1, self.num_layers - 1):
+            h = self.data_process.drop(graph, x)
             h = self.convs[i](graph, h)
-            if self.batchNorm:
-                h = self.bns[i](h)
-            if self.layerNorm:
-                h = self.ln(h)
-            h = self.activationFunc(h)
+            h = self.data_process.residual(self.hidden_list, h, i)
+            h = self.data_process.norm(h)
+            h = self.data_process.activation(h)
+            self.hidden_list.append(h)
+
         h = self.out_fc(h)
+        h = F.log_softmax(h, dim=1)
         return h
 
     
