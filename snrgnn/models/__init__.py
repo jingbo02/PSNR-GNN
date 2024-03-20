@@ -66,6 +66,8 @@ class DataProcess():
             return F.tanh(x)
         if self.Activation == 'identity':
             return x
+        if self.Activation == 'gelu':
+            return F.gelu(x)
         
 
     def norm(self, x):
