@@ -6,6 +6,8 @@ from dgl.nn import GraphConv
 import dgl
 import DataProcess
 
+
+
 class GCN(nn.Module):
     def __init__(self, nfeat:int, nhid:int, nclass:int, num_layers:int, activation:str, norm:list, drop:list, residual:str):
         super().__init__()
@@ -32,7 +34,6 @@ class GCN(nn.Module):
         h = self.convs[0](graph, h)
         h = self.data_process.norm(h)
         h = self.data_process.activation(h)
-        h = self.data_process.residual(h)
         self.hidden_list.append(h)
         
         for i in range(1, self.num_layers - 1):
