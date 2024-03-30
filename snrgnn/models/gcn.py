@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from dgl import DropEdge
 from dgl.nn import GraphConv
 import dgl
 import DataProcess
@@ -14,12 +13,13 @@ class GCN(nn.Module):
         self.num_layers = num_layers
         self.name = 'GCN_'+ residual
         self.hidden_list = []
-        self.convs = nn.ModuleList()
 
         # Conv Layers
+        self.convs = nn.ModuleList()
         self.convs.append(GraphConv(nfeat, nhid))
         for i in range(self.numLayers - 1):
             self.convs.append(GraphConv(nhid, nhid))
+
         self.out_fc = nn.Linear(nhid, nclass)
         self.data_process = DataProcess(num_layers, nfeat, nhid, nclass, residual, drop, norm, activation)
         self.reset_parameters()
