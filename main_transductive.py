@@ -3,7 +3,7 @@ import numpy as np
 from tqdm import tqdm
 import torch
 
-from graphmae.utils import (
+from snrgnn.utils import (
     build_args,
     create_optimizer,
     set_random_seed,
@@ -11,7 +11,7 @@ from graphmae.utils import (
     get_current_lr,
     load_best_configs,
 )
-from graphmae.datasets.data_util import load_dataset
+from snrgnn.datasets import load_dataset
 from graphmae.evaluation import node_classification_evaluation
 from graphmae.models import build_model
 
