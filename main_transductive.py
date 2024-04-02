@@ -79,11 +79,6 @@ def main(args):
     dataset_name = args.dataset
     max_epoch = args.max_epoch
     max_epoch_f = args.max_epoch_f
-    num_hidden = args.num_hidden
-    num_layers = args.num_layers
-    encoder_type = args.encoder
-    decoder_type = args.decoder
-    replace_rate = args.replace_rate
 
     optim_type = args.optimizer 
     loss_fn = args.loss_fn
