@@ -1,0 +1,24 @@
+python ../main_transductive.py \
+    --device -1 \
+	--mask_rate 0.5 \
+	--encoder "gat" \
+	--decoder "gat" \
+	--in_drop 0.2 \
+	--attn_drop 0.1 \
+	--num_layers 2 \
+	--num_hidden 512 \
+	--num_heads 4 \
+	--max_epoch 1500 \
+	--max_epoch_f 300 \
+	--lr 0.001 \
+	--weight_decay 0 \
+	--lr_f 0.01 \
+	--weight_decay_f 1e-4 \
+	--activation relu \
+	--optimizer adam \
+	--drop_edge_rate 0.0 \
+	--loss_fn "sce" \
+	--seeds 42 \
+	--replace_rate 0.05 \
+	--alpha_l 3 \
+	--linear_prob \

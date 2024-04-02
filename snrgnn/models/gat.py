@@ -3,10 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from dgl.nn import GATConv
 import dgl
-import DataProcess 
+from .DataProcess import DataProcess
 
 
-class GAT(nn.module):
+class GAT(nn.Module):
     def __init__(self, nfeat:int, nhid:int, nclass:int, num_layers:int, num_heads, activation:str, norm:list, drop:list, residual:str):
         super().__init__()
         self.num_layers = num_layers

@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from dgl.nn import GraphConv
 import dgl
-import DataProcess
-
+from .DataProcess import DataProcess
+import pdb
 
 
 class GCN(nn.Module):
@@ -17,7 +17,7 @@ class GCN(nn.Module):
         # Conv Layers
         self.convs = nn.ModuleList()
         self.convs.append(GraphConv(nfeat, nhid))
-        for i in range(self.numLayers - 1):
+        for i in range(self.num_layers - 1):
             self.convs.append(GraphConv(nhid, nhid))
 
         self.out_fc = nn.Linear(nhid, nclass)
@@ -37,7 +37,8 @@ class GCN(nn.Module):
         self.hidden_list.append(h)
         
         for i in range(1, self.num_layers - 1):
-            h = self.data_process.drop(graph, x)
+            h = self.data_process.drop(graph, h)
+            # pdb.set_trace()
             h = self.convs[i](graph, h)
             h = self.data_process.residual(self.hidden_list, h, i)
             h = self.data_process.norm(h)

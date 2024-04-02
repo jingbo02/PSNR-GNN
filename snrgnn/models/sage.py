@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from dgl.nn import SAGEConv
 import dgl
-import DataProcess
+from .DataProcess import DataProcess
 
 
 
