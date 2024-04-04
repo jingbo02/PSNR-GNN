@@ -80,7 +80,8 @@ def load_dataset(dataset_name):
         graph = graph.add_self_loop()
     num_features = graph.ndata["feat"].shape[1]
     num_classes = dataset.num_classes
-    return graph, (num_features, num_classes)
+    num_nodes = graph.num_nodes()
+    return graph, (num_features, num_classes, num_nodes)
 
 
 def load_inductive_dataset(dataset_name):

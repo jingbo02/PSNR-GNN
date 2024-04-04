@@ -3,8 +3,34 @@ from dgl import DropEdge
 import torch
 import torch.nn as nn
 
+
+class SNRModule(nn.Module):
+    def __init__(self, nodes_num, args):
+        super().__init__()
+        # Set the mean and standard deviation to learnable parameters
+        self.nodes_num =  nodes_num
+        if not args.randn_init:
+            mean = torch.zeros(self.nodes_num,1)
+            std = torch.ones(self.nodes_num,1)
+        else:
+            mean = F.sigmoid(torch.randn(self.nodes_num,1))
+            std = F.sigmoid(torch.randn(self.nodes_num,1))
+
+        self.mean = nn.Parameter(torch.FloatTensor(mean))
+        self.std = nn.Parameter(torch.FloatTensor(std))
+
+    def forward(self, input):
+        x  = torch.randn(self.nodes_num,1)
+        y = torch.ones(self.nodes_num,1)
+        x = x.to(self.mean.device)
+        y = y.to(self.mean.device)
+        return input * F.sigmoid(x*self.std + y*self.mean)
+        #TODO : check if calculation is correct
+
+
+
 class DataProcess(nn.Module):
-    def __init__(self, numlayers, nfeat, nhid, nclass, Residual, Drop, Norm, Activation):
+    def __init__(self, numlayers, nfeat, nhid, nclass, Residual, Drop, Norm, Activation, nodes_num, args):
         super().__init__()
         self.numlayers = numlayers
         self.nfeat = nfeat
@@ -20,7 +46,12 @@ class DataProcess(nn.Module):
                 self.linear.append(nn.Linear((i+2)*nhid,nhid))
         if self.res_type == "jk":
             self.linear = nn.Linear(self.num_layers * nhid,nhid)
-        
+        if self.res_type == "snr":
+            self.SnrList = nn.ModuleList()
+            for i in range(self.num_layers):
+                self.SnrList.append(SNRModule(nodes_num, args))
+
+
         self.NormList = nn.ModuleList()
         if 'batch' in Norm:
             self.NormList.append(nn.BatchNorm1d(nhid))
@@ -41,6 +72,9 @@ class DataProcess(nn.Module):
                 for i in range(1, self.numlayers):
                     x = torch.cat([x, hidden_list[i]], dim=1)
                 return self.linear(x)
+        
+        if self.res_type == 'snr':
+            return hidden_list[0] + self.SnrList[layer](x - hidden_list[0])
 
     def drop(self, g, x):
         """

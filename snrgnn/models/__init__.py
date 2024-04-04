@@ -11,7 +11,7 @@ from .sage import GraphSage
 
 
 class BuildModel():
-    def __init__(self, model_name, nfeat:int, nhid:int, nclass:int, num_layers:int, activation:str, norm:list, drop:list, residual:str):
+    def __init__(self, model_name, nfeat:int, nhid:int, nclass:int, num_layers:int, activation:str, norm:list, drop:list, residual:str, num_node:int):
         self.model_name = model_name
         self.nfeat = nfeat
         self.nhid = nhid
@@ -21,10 +21,11 @@ class BuildModel():
         self.drop = drop
         self.activation = activation
         self.residual = residual
+        self.num_node = num_node
 
-    def build(self):
+    def build(self, args):
         if self.model_name == 'gcn':
-            return gcn.GCN(self.nfeat, self.nhid, self.nclass, self.num_layers, self.activation, self.norm, self.drop, self.residual)
+            return gcn.GCN(self.nfeat, self.nhid, self.nclass, self.num_layers, self.activation, self.norm, self.drop, self.residual, self.num_node, args)
         if self.model_name == 'gat':
             #TODO            
             pass

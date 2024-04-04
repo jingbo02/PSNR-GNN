@@ -34,7 +34,7 @@ def accuracy(output, labels):
     return correct / len(labels)
 
 
-def train(model, graph, feat, optimizer, max_epoch, device, scheduler, num_classes, lr_f, weight_decay_f, max_epoch_f, linear_prob, logger=None):
+def train(model, graph, feat, optimizer, max_epoch, device, scheduler, num_classes, logger=None):
     # logging.info("start training..")
     graph = graph.to(device)
     x = feat.to(device)
@@ -73,28 +73,25 @@ def evaluate(model, graph, feature, idx):
     acc_val = accuracy(output[idx], labels[idx])
     return acc_val
 
+
 def main(args):
     device = args.device if args.device >= 0 else "cpu"
     seeds = args.seeds
     dataset_name = args.dataset
-    max_epoch = args.max_epoch
-    max_epoch_f = args.max_epoch_f
 
     optim_type = args.optimizer 
     loss_fn = args.loss_fn
 
     lr = args.lr
     weight_decay = args.weight_decay
-    lr_f = args.lr_f
-    weight_decay_f = args.weight_decay_f
-    linear_prob = args.linear_prob
     load_model = args.load_model
     save_model = args.save_model
     logs = args.logging
     use_scheduler = args.scheduler
 
-    graph, (num_features, num_classes) = load_dataset(dataset_name)
+    graph, (num_features, num_classes, num_node) = load_dataset(dataset_name)
     args.num_features = num_features
+    
 
     acc_list = []
     # estp_acc_list = []
@@ -102,14 +99,14 @@ def main(args):
         print(f"####### Run {i} for seed {seed}")
         set_random_seed(seed)
 
-        model = BuildModel(args.backbone, num_features, args.n_hid, num_classes, args.n_layers, args.activation, args.norm, args.drop, args.residual_type).build()
+        model = BuildModel(args.backbone, num_features, args.n_hid, num_classes, args.n_layers, args.activation, args.norm, args.drop, args.residual_type, num_node).build(args)
 
         model.to(device)
         optimizer = create_optimizer(optim_type, model, lr, weight_decay)
 
         if use_scheduler:
             # logging.info("Use schedular")
-            scheduler = lambda epoch :( 1 + np.cos((epoch) * np.pi / max_epoch) ) * 0.5
+            # scheduler = lambda epoch :( 1 + np.cos((epoch) * np.pi / max_epoch) ) * 0.5
             # scheduler = lambda epoch: epoch / warmup_steps if epoch < warmup_steps \
                     # else ( 1 + np.cos((epoch - warmup_steps) * np.pi / (max_epoch - warmup_steps))) * 0.5
             scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=scheduler)
@@ -119,7 +116,7 @@ def main(args):
         x = graph.ndata["feat"]
         logger = None
         if not load_model:
-            model = train(model, graph, x, optimizer, max_epoch, device, scheduler, num_classes, lr_f, weight_decay_f, max_epoch_f, linear_prob, logger)
+            model = train(model, graph, x, optimizer, args.max_epoch, device, scheduler, num_classes, logger)
             model = model.cpu()
 
         if load_model:

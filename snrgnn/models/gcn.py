@@ -8,7 +8,7 @@ import pdb
 
 
 class GCN(nn.Module):
-    def __init__(self, nfeat:int, nhid:int, nclass:int, num_layers:int, activation:str, norm:list, drop:list, residual:str):
+    def __init__(self, nfeat:int, nhid:int, nclass:int, num_layers:int, activation:str, norm:list, drop:list, residual:str, num_node:int, args):
         super().__init__()
         self.num_layers = num_layers
         self.name = 'GCN_'+ residual
@@ -21,7 +21,7 @@ class GCN(nn.Module):
             self.convs.append(GraphConv(nhid, nhid))
 
         self.out_fc = nn.Linear(nhid, nclass)
-        self.data_process = DataProcess(num_layers, nfeat, nhid, nclass, residual, drop, norm, activation)
+        self.data_process = DataProcess(num_layers, nfeat, nhid, nclass, residual, drop, norm, activation, num_node, args)
         self.reset_parameters()
 
     def reset_parameters(self):
