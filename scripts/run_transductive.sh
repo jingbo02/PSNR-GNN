@@ -10,6 +10,7 @@ python ../main_transductive.py \
 	--optimizer adam \
 	--drop_edge_rate 0.0 \
 	--loss_fn "sce" \
-	--seeds 42 \
+	--seeds 10 0\
 	--replace_rate 0.05 \
 	--alpha_l 3 \
+	--save_model 

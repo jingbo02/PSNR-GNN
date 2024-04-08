@@ -17,7 +17,9 @@ from dgl.data.ppi import PPIDataset
 from dgl.dataloading import GraphDataLoader
 
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
 
+import os
 
 GRAPH_DICT = {
     "cora": CoraGraphDataset,
@@ -44,8 +46,31 @@ def scale_feats(x):
     feats = torch.from_numpy(scaler.transform(feats)).float()
     return feats
 
+def split_datasets(label, num_split):
+    split_list = []
+    data_list = [i for i in range(len(label))]
+    for random_state in range(num_split): 
+        
+        x_train, x_temp, y_train, y_temp = train_test_split(data_list, label, test_size=0.8, stratify=label, random_state=random_state)
+        x_val, x_test, y_val, y_test = train_test_split(x_temp, y_temp, test_size=0.75, stratify=y_temp, random_state=random_state)
 
-def load_dataset(dataset_name):
+        if(random_state == 10):
+            print("The length of x_train: ",len(x_train))
+            print("The length of x_val: ",len(x_val))
+            print("The length of x_test: ",len(x_test))
+            print("The summation: ",len(x_train)+len(x_val)+len(x_test))
+
+        split_libel = torch.tensor(np.zeros(len(data_list), dtype=int))
+        split_libel[x_train] = 0  
+        split_libel[x_test] = 1  
+        split_libel[x_val] = 2   
+        
+        split_list.append(split_libel)
+    splits = torch.stack(split_list, dim = 0)
+    # np.save(os.path.join(file_path, dataset_name + "_split.npy"), split_labels)
+    return splits.numpy()
+
+def load_dataset(dataset_name, args):
     assert dataset_name in GRAPH_DICT, f"Unknow dataset: {dataset_name}."
     if dataset_name.startswith("ogbn"):
         dataset = GRAPH_DICT[dataset_name](dataset_name)
@@ -55,7 +80,8 @@ def load_dataset(dataset_name):
     if dataset_name == "ogbn-arxiv":
         graph, labels = dataset[0]
         num_nodes = graph.num_nodes()
-
+        
+        
         split_idx = dataset.get_idx_split()
         train_idx, val_idx, test_idx = split_idx["train"], split_idx["valid"], split_idx["test"]
         graph = preprocess(graph)
@@ -126,57 +152,3 @@ def load_inductive_dataset(dataset_name):
         
     return train_dataloader, valid_dataloader, test_dataloader, eval_train_dataloader, num_features, num_classes
 
-
-
-def load_graph_classification_dataset(dataset_name, deg4feat=False):
-    dataset_name = dataset_name.upper()
-    dataset = TUDataset(dataset_name)
-    graph, _ = dataset[0]
-
-    if "attr" not in graph.ndata:
-        if "node_labels" in graph.ndata and not deg4feat:
-            print("Use node label as node features")
-            feature_dim = 0
-            for g, _ in dataset:
-                feature_dim = max(feature_dim, g.ndata["node_labels"].max().item())
-            
-            feature_dim += 1
-            for g, l in dataset:
-                node_label = g.ndata["node_labels"].view(-1)
-                feat = F.one_hot(node_label, num_classes=feature_dim).float()
-                g.ndata["attr"] = feat
-        else:
-            print("Using degree as node features")
-            feature_dim = 0
-            degrees = []
-            for g, _ in dataset:
-                feature_dim = max(feature_dim, g.in_degrees().max().item())
-                degrees.extend(g.in_degrees().tolist())
-            MAX_DEGREES = 400
-
-            oversize = 0
-            for d, n in Counter(degrees).items():
-                if d > MAX_DEGREES:
-                    oversize += n
-            # print(f"N > {MAX_DEGREES}, #NUM: {oversize}, ratio: {oversize/sum(degrees):.8f}")
-            feature_dim = min(feature_dim, MAX_DEGREES)
-
-            feature_dim += 1
-            for g, l in dataset:
-                degrees = g.in_degrees()
-                degrees[degrees > MAX_DEGREES] = MAX_DEGREES
-                
-                feat = F.one_hot(degrees, num_classes=feature_dim).float()
-                g.ndata["attr"] = feat
-    else:
-        print("******** Use `attr` as node features ********")
-        feature_dim = graph.ndata["attr"].shape[1]
-
-    labels = torch.tensor([x[1] for x in dataset])
-    
-    num_classes = torch.max(labels).item() + 1
-    dataset = [(g.remove_self_loop().add_self_loop(), y) for g, y in dataset]
-
-    print(f"******** # Num Graphs: {len(dataset)}, # Num Feat: {feature_dim}, # Num Classes: {num_classes} ********")
-
-    return dataset, (feature_dim, num_classes)
