@@ -6,26 +6,6 @@ import torch.nn as nn
 from utils import create_optimizer, accuracy
 
 
-def node_classification_evaluation(model, graph, x, num_classes, lr_f, weight_decay_f, max_epoch_f, device, linear_prob=True, mute=False):
-    model.eval()
-    if linear_prob:
-        with torch.no_grad():
-            x = model.embed(graph.to(device), x.to(device))
-            in_feat = x.shape[1]
-        encoder = LogisticRegression(in_feat, num_classes)
-    else:
-        encoder = model.encoder
-        encoder.reset_classifier(num_classes)
-
-    num_finetune_params = [p.numel() for p in encoder.parameters() if  p.requires_grad]
-    if not mute:
-        print(f"num parameters for finetuning: {sum(num_finetune_params)}")
-    
-    encoder.to(device)
-    optimizer_f = create_optimizer("adam", encoder, lr_f, weight_decay_f)
-    final_acc, estp_acc = linear_probing_for_transductive_node_classiifcation(encoder, graph, x, optimizer_f, max_epoch_f, device, mute)
-    return final_acc, estp_acc
-
 
 def linear_probing_for_transductive_node_classiifcation(model, graph, feat, optimizer, max_epoch, device, mute=False):
     criterion = torch.nn.CrossEntropyLoss()
