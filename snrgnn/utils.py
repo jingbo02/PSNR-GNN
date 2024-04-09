@@ -50,7 +50,7 @@ def build_args():
     parser.add_argument("--randn_init", action="store_true", default=False, help = "Initialization for parameter of SNRModule")
     parser.add_argument("--activation", type=str, default="relu")
 
-    parser.add_argument("--seeds", type=int, nargs="+", default=[0])
+    parser.add_argument("--seeds", type=int, nargs="+", default=[42])
     parser.add_argument("--dataset", type=str, default="cora")
     parser.add_argument("--pre_split_path", type=str, default="./datasets/split_data")
     parser.add_argument("--split_dataset", action="store_true", default=True)
@@ -75,9 +75,6 @@ def build_args():
     parser.add_argument("--negative_slope", type=float, default=0.2,
                         help="the negative slope of leaky relu for GAT")
     
-    parser.add_argument("--drop_edge_rate", type=float, default=0.0)
-    parser.add_argument("--replace_rate", type=float, default=0.0)
-
     parser.add_argument("--loss_fn", type=str, default="sce")
     parser.add_argument("--alpha_l", type=float, default=2, help="`pow`coefficient for `sce` loss")
     parser.add_argument("--optimizer", type=str, default="adam")
@@ -91,10 +88,6 @@ def build_args():
     parser.add_argument("--scheduler", action="store_true", default=False)
     parser.add_argument("--concat_hidden", action="store_true", default=False)
 
-    # for graph classification
-    parser.add_argument("--pooling", type=str, default="mean")
-    parser.add_argument("--deg4feat", action="store_true", default=False, help="use node degree as input feature")
-    parser.add_argument("--batch_size", type=int, default=32)
     args = parser.parse_args()
     return args
 

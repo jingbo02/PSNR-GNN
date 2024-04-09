@@ -72,7 +72,8 @@ def train(model, graph, feat, optimizer, max_epoch, device, scheduler, num_class
 
 
 def main(args):
-    device = args.device if args.device >= 0 else "cpu"
+    device = "cuda:" + str(args.device) if args.device >= 0 else "cpu"
+    print(device)
     seeds = args.seeds
     dataset_name = args.dataset
 
@@ -117,6 +118,7 @@ def main(args):
         graph.ndata["train_mask"] = train_idx
         graph.ndata["test_mask"] = test_idx
         graph.ndata["val_mask"] = val_idx
+        graph = graph.to(device)
 
         for j, seed in enumerate(seeds):
             # print(f"####### Run {i} for seed {seed}")
@@ -146,8 +148,6 @@ def main(args):
             final_acc = evaluate(model, graph, x, test_mask)
 
             acc_list.append(final_acc)
-
-
 
         final_acc, final_acc_std = np.mean(acc_list), np.std(acc_list)
         print(f"# spilt: {i}, final_acc: {final_acc:.4f}±{final_acc_std:.4f}")
