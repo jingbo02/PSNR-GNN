@@ -3,6 +3,7 @@ from dgl import DropEdge
 import torch
 import torch.nn as nn
 import dgl
+import pdb
 
 class SNRModule(nn.Module):
     def __init__(self, nodes_num, args):
@@ -81,9 +82,9 @@ class DataProcess(nn.Module):
         drop_list: [drop_out_ratio,drop_edge_ratio]
         """
         if self.drop_list[0] != 0.0:
-            x = F.dropout(x, p=self.drop[0], training=training)
+            x = F.dropout(x, p=self.drop_list[0], training=training)
         if self.drop_list[1] != 0.0 and training:
-            g = DropEdge(self.drop[1])(g)
+            g = DropEdge(self.drop_list[1])(g)
             g = dgl.add_self_loop(g)
 
         return g, x
@@ -106,6 +107,6 @@ class DataProcess(nn.Module):
         
 
     def norm(self, x):
-        for norm in self.NormList:
-            x = norm(x)
+        for norm_mathod in self.NormList:
+            x = norm_mathod(x)
         return x
