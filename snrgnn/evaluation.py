@@ -6,7 +6,6 @@ import torch.nn as nn
 from utils import create_optimizer, accuracy
 
 
-
 def linear_probing_for_transductive_node_classiifcation(model, graph, feat, optimizer, max_epoch, device, mute=False):
     criterion = torch.nn.CrossEntropyLoss()
 
