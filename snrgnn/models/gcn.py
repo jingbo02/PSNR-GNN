@@ -10,13 +10,19 @@ import pdb
 class GCN(nn.Module):
     def __init__(self, nfeat:int, nhid:int, nclass:int, num_layers:int, activation:str, norm:list, drop:list, residual:str, num_node:int, args):
         super().__init__()
+        self.residual = residual
         self.num_layers = num_layers
         self.name = 'GCN_'+ residual
         self.hidden_list = []
 
         # Conv Layers
         self.convs = nn.ModuleList()
-        self.convs.append(GraphConv(nfeat, nhid))
+        if residual == 'snr':
+            self.convs.append(GraphConv(nfeat, nhid))
+        else:
+            self.in_fc = nn.Linear(nfeat, nhid)
+            self.convs.append(GraphConv(nhid, nhid))
+
         for i in range(self.num_layers - 1):
             self.convs.append(GraphConv(nhid, nhid))
 
@@ -29,15 +35,19 @@ class GCN(nn.Module):
             conv.reset_parameters()
         self.out_fc.reset_parameters()
 
-    def forward(self, graph, x):
-        h = self.data_process.drop(graph, x)
+    def forward(self, graph, h):
+        if self.residual not in ['snr']:
+            h = self.in_fc(h)
+            self.hidden_list.append(h)
+            
+        graph, h = self.data_process.drop(graph, h, self.training)
         h = self.convs[0](graph, h)
         h = self.data_process.norm(h)
         h = self.data_process.activation(h)
         self.hidden_list.append(h)
         
-        for i in range(1, self.num_layers - 1):
-            h = self.data_process.drop(graph, h)
+        for i in range(1, self.num_layers):
+            graph, h = self.data_process.drop(graph, h, self.training)
             # pdb.set_trace()
             h = self.convs[i](graph, h)
             h = self.data_process.residual(self.hidden_list, h, i)

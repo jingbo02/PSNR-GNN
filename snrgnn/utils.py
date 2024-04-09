@@ -187,3 +187,17 @@ class TBLogger(object):
     def finish(self):
         self.writer.close()
 
+
+def accuracy(output, labels):
+    preds = output.max(1)[1].type_as(labels)
+    correct = preds.eq(labels).double()
+    correct = correct.sum()
+    return correct / len(labels)
+
+
+def evaluate(model, graph, feature, idx):
+    model.eval()
+    output =  model(graph, feature)
+    labels = graph.ndata['label']
+    acc_val = accuracy(output[idx], labels[idx])
+    return acc_val

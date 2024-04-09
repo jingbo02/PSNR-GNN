@@ -2,7 +2,7 @@ import torch.nn.functional as F
 from dgl import DropEdge
 import torch
 import torch.nn as nn
-
+import dgl
 
 class SNRModule(nn.Module):
     def __init__(self, nodes_num, args):
@@ -76,15 +76,17 @@ class DataProcess(nn.Module):
         if self.res_type == 'snr':
             return hidden_list[0] + self.SnrList[layer](x - hidden_list[0])
 
-    def drop(self, g, x):
+    def drop(self, g, x, training):
         """
         drop_list: [drop_out_ratio,drop_edge_ratio]
         """
         if self.drop_list[0] != 0.0:
-            x = F.dropout(x, p=self.drop[0], training=self.training)
-        if self.drop_list[1] != 0.0:
-            x = DropEdge(self.drop[1])(g)
-        return x
+            x = F.dropout(x, p=self.drop[0], training=training)
+        if self.drop_list[1] != 0.0 and training:
+            g = DropEdge(self.drop[1])(g)
+            g = dgl.add_self_loop(g)
+
+        return g, x
     
     def activation(self, x):
         if self.act_type == 'relu':

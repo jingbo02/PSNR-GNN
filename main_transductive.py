@@ -13,6 +13,8 @@ from snrgnn.utils import (
     TBLogger,
     get_current_lr,
     load_best_configs,
+    accuracy,
+    evaluate
 )
 from snrgnn.datasets.dataset import load_dataset, split_datasets
 # from graphmae.evaluation import node_classification_evaluation
@@ -27,11 +29,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 # logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 
-def accuracy(output, labels):
-    preds = output.max(1)[1].type_as(labels)
-    correct = preds.eq(labels).double()
-    correct = correct.sum()
-    return correct / len(labels)
 
 
 def train(model, graph, feat, optimizer, max_epoch, device, scheduler, num_classes, logger = None, save_model = False):
@@ -72,12 +69,6 @@ def train(model, graph, feat, optimizer, max_epoch, device, scheduler, num_class
     return model
 
 
-def evaluate(model, graph, feature, idx):
-    model.eval()
-    output =  model(graph, feature)
-    labels = graph.ndata['label']
-    acc_val = accuracy(output[idx], labels[idx])
-    return acc_val
 
 
 def main(args):
