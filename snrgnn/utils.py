@@ -45,7 +45,7 @@ def build_args():
     parser.add_argument("--n_layers", type=int, default=3)
     parser.add_argument("--norm", type=str, nargs="+", default=["batchnorm"])
     parser.add_argument("--drop", type=int, nargs="+", default=[0.1,0.1])
-    parser.add_argument("--residual_type", type=str, default="res")
+    parser.add_argument("--residual_type", type=str, default="none")
     parser.add_argument("--max_epoch", type = int, help = "max training epoch", default = 200)
     parser.add_argument("--randn_init", action="store_true", default=False, help = "Initialization for parameter of SNRModule")
     parser.add_argument("--activation", type=str, default="relu")

@@ -76,6 +76,9 @@ class DataProcess(nn.Module):
         
         if self.res_type == 'snr':
             return hidden_list[0] + self.SnrList[layer](x - hidden_list[0])
+        
+        if self.res_type == 'none':
+            return x
 
     def drop(self, g, x, training):
         """

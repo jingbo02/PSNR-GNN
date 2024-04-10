@@ -34,12 +34,13 @@ class GCN(nn.Module):
         for conv in self.convs:
             conv.reset_parameters()
         self.out_fc.reset_parameters()
+        if self.residual not in ['snr']:
+            self.in_fc.reset_parameters()
 
     def forward(self, graph, h):
         if self.residual not in ['snr']:
             h = self.in_fc(h)
             self.hidden_list.append(h)
-            
         graph, h = self.data_process.drop(graph, h, self.training)
         h = self.convs[0](graph, h)
         h = self.data_process.norm(h)
