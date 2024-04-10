@@ -61,35 +61,26 @@ def train(model, graph, optimizer, max_epoch, scheduler, num_classes, logger = N
 
         if acc_val > best_acc and save_model:
             best_acc = acc_val
-            torch.save(model.state_dict(), "./checkpoint.pt")
 
-
-
-        if scheduler is not None:
-            scheduler.step()
 
         epoch_iter.set_description(f"# Epoch {epoch}: train_loss: {loss_train.item():.4f} train_acc: {acc_train:.4f} val_acc: {acc_val:.4f} test_acc: {acc_test:.4f}")
 
-    # return best_model
-    # return model
+
 
 
 
 
 def main(args):
     device = "cuda:" + str(args.device) if args.device >= 0 else "cpu"
+    # TO-DO
     seeds = args.seeds
     dataset_name = args.dataset
 
     optim_type = args.optimizer 
-    loss_fn = args.loss_fn
 
     lr = args.lr
     weight_decay = args.weight_decay
-    load_model = args.load_model
-    save_model = args.save_model
     logs = args.logging
-    use_scheduler = args.scheduler
 
     graph, (num_features, num_classes, num_node) = load_dataset(dataset_name, args)
 
@@ -137,17 +128,9 @@ def main(args):
             optimizer = create_optimizer(optim_type, model, lr, weight_decay)
             print(next(model.parameters()).device)
 
-            if use_scheduler:
-                scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=scheduler)
-            else:
-                scheduler = None
-                
-            logger = None
-            if not load_model:
-                train(model, graph, optimizer, args.max_epoch, scheduler, num_classes, logger, args.save_model)
-                model.load_state_dict(torch.load("./checkpoint.pt"))
-            else:
-                model.load_state_dict(torch.load("./checkpoint.pt"))    #TODO: add load path
+
+            train(model, graph, optimizer, args.max_epoch,  num_classes, logger, args.save_model)
+
             
             x = graph.ndata["feat"]
             test_mask = graph.ndata['test_mask']

@@ -26,7 +26,6 @@ class SNRModule(nn.Module):
         x = x.to(self.mean.device)
         y = y.to(self.mean.device)
         return input * F.sigmoid(x*self.std + y*self.mean)
-        #TODO : check if calculation is correct
 
 
 
@@ -49,7 +48,7 @@ class DataProcess(nn.Module):
             self.linear = nn.Linear(self.nlayers * nhid,nhid)
         if self.res_type == "snr":
             self.SnrList = nn.ModuleList()
-            for i in range(self.nlayers):
+            for i in range(self.nlayers-1):
                 self.SnrList.append(SNRModule(nodes_num, args))
 
 
@@ -65,17 +64,17 @@ class DataProcess(nn.Module):
         if self.res_type == 'initres':
             return hidden_list[0] + x
         if self.res_type == 'dense':
-            for i in range(self.nlayers):
+            for i in range(layer+1):
                 x = torch.cat([x, hidden_list[i]], dim=1)
-            return self.liear[layer](x)
+            return self.linear[layer](x)
         if self.res_type == 'jk':
-            if layer == self.nlayers:
-                for i in range(1, self.nlayers):
+            if layer == self.nlayers - 1:
+                for i in range(0, self.nlayers):
                     x = torch.cat([x, hidden_list[i]], dim=1)
                 return self.linear(x)
         
         if self.res_type == 'snr':
-            return hidden_list[0] + self.SnrList[layer](x - hidden_list[0])
+            return hidden_list[0] + self.SnrList[layer-1](hidden_list[0] - x)
         
         if self.res_type == 'none':
             return x

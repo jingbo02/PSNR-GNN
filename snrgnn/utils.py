@@ -17,13 +17,6 @@ from torch import optim as optim
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 
-def accuracy(y_pred, y_true):
-    y_true = y_true.squeeze().long()
-    preds = y_pred.max(1)[1].type_as(y_true)
-    correct = preds.eq(y_true).double()
-    correct = correct.sum().item()
-    return correct / len(y_true)
-
 
 def set_random_seed(seed):
     random.seed(seed)
@@ -34,26 +27,25 @@ def set_random_seed(seed):
     torch.backends.cudnn.determinstic = True
 
 
-def get_current_lr(optimizer):
-    return optimizer.state_dict()["param_groups"][0]["lr"]
-
 
 def build_args():
-    parser = argparse.ArgumentParser(description="GAT")
+    parser = argparse.ArgumentParser()
     parser.add_argument("--backbone", type=str, default="gcn")
     parser.add_argument("--n_hid", type=int, default=64)
-    parser.add_argument("--n_layers", type=int, default=3)
-    parser.add_argument("--norm", type=str, nargs="+", default=["batchnorm"])
-    parser.add_argument("--drop", type=int, nargs="+", default=[0.1,0.1])
+    parser.add_argument("--n_layers", type=int, default=2)
+    parser.add_argument("--norm", type=str, nargs="+", default=[])
+    parser.add_argument("--drop", type=int, nargs="+", default=[0.5,0.0])
     parser.add_argument("--residual_type", type=str, default="none")
-    parser.add_argument("--max_epoch", type = int, help = "max training epoch", default = 200)
+    parser.add_argument("--max_epoch", type = int, help = "max training epoch", default = 500)
     parser.add_argument("--randn_init", action="store_true", default=False, help = "Initialization for parameter of SNRModule")
-    parser.add_argument("--activation", type=str, default="relu")
+    parser.add_argument("--activation", type=str, default="elu")
 
-    parser.add_argument("--seeds", type=int, nargs="+", default=[42])
+        
+    parser.add_argument("--seeds", type=int, nargs="+", default=[42]) #TO-DO 固定seed
     parser.add_argument("--dataset", type=str, default="cora")
+    parser.add_argument("--split_dataset", action="store_true", default=False)
     parser.add_argument("--pre_split_path", type=str, default="./datasets/split_data")
-    parser.add_argument("--split_dataset", action="store_true", default=True)
+    #TO-DO delete save_split
     parser.add_argument("--loda_split", action="store_true", default=False)
     parser.add_argument("--save_split", action="store_true", default=False)
     parser.add_argument("--num_split", type=int, default=5)
@@ -64,34 +56,21 @@ def build_args():
 
     parser.add_argument("--num_heads", type=int, default=4,
                         help="number of hidden attention heads")
-    parser.add_argument("--num_out_heads", type=int, default=1,
-                        help="number of output attention heads")
 
-
-    parser.add_argument("--lr", type=float, default=0.005,
+    parser.add_argument("--lr", type=float, default=1e-3,
                         help="learning rate")
     parser.add_argument("--weight_decay", type=float, default=5e-4,
                         help="weight decay")
-    parser.add_argument("--negative_slope", type=float, default=0.2,
-                        help="the negative slope of leaky relu for GAT")
-    
-    parser.add_argument("--loss_fn", type=str, default="sce")
-    parser.add_argument("--alpha_l", type=float, default=2, help="`pow`coefficient for `sce` loss")
+
     parser.add_argument("--optimizer", type=str, default="adam")
     
-    
-    parser.add_argument("--load_model", action="store_true")
-    parser.add_argument("--save_model", action="store_true")
 
     parser.add_argument("--use_cfg", action="store_true", help = "if load best config")
     parser.add_argument("--logging", action="store_true")
-    parser.add_argument("--scheduler", action="store_true", default=False)
-    parser.add_argument("--concat_hidden", action="store_true", default=False)
+    parser.add_argument("--log_path", type=str, default="./logging_data")
 
     args = parser.parse_args()
     return args
-
-
 
 
 
@@ -121,14 +100,6 @@ def create_optimizer(opt, model, lr, weight_decay, get_num_layer=None, get_layer
     return optimizer
 
 
-# -------------------
-def mask_edge(graph, mask_prob):
-    E = graph.num_edges()
-
-    mask_rates = torch.FloatTensor(np.ones(E) * mask_prob)
-    masks = torch.bernoulli(1 - mask_rates)
-    mask_idx = masks.nonzero().squeeze(1)
-    return mask_idx
 
 
 
