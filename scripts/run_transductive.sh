@@ -11,4 +11,5 @@ python ../main_transductive.py \
 	--loss_fn "sce" \
 	--seeds 10 0\
 	--alpha_l 3 \
-	--save_model 
+	--save_model \
+	--residual_type snr

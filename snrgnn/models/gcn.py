@@ -38,12 +38,15 @@ class GCN(nn.Module):
             self.in_fc.reset_parameters()
 
     def forward(self, graph, h):
+        # pdb.set_trace()
+        self.hidden_list = []
         if self.residual not in ['snr']:
             h = self.in_fc(h)
             self.hidden_list.append(h)
+
         graph, h = self.data_process.drop(graph, h, self.training)
         h = self.convs[0](graph, h)
-        h = self.data_process.norm(h)
+        h = self.data_process.normalization(h)
         h = self.data_process.activation(h)
         self.hidden_list.append(h)
         
@@ -52,7 +55,7 @@ class GCN(nn.Module):
             # pdb.set_trace()
             h = self.convs[i](graph, h)
             h = self.data_process.residual(self.hidden_list, h, i)
-            h = self.data_process.norm(h)
+            h = self.data_process.normalization(h)
             h = self.data_process.activation(h)
             self.hidden_list.append(h)
 

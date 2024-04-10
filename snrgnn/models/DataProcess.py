@@ -31,9 +31,9 @@ class SNRModule(nn.Module):
 
 
 class DataProcess(nn.Module):
-    def __init__(self, numlayers, nfeat, nhid, nclass, Residual, Drop, Norm, Activation, nodes_num, args):
+    def __init__(self, nlayers, nfeat, nhid, nclass, Residual, Drop, Norm, Activation, nodes_num, args):
         super().__init__()
-        self.numlayers = numlayers
+        self.nlayers = nlayers
         self.nfeat = nfeat
         self.nhid = nhid
         self.nclass = nclass
@@ -43,13 +43,13 @@ class DataProcess(nn.Module):
 
         if self.res_type == "dense":
             self.linear = nn.ModuleList()
-            for i in range(self.num_layers):
+            for i in range(self.nlayers):
                 self.linear.append(nn.Linear((i+2)*nhid,nhid))
         if self.res_type == "jk":
-            self.linear = nn.Linear(self.num_layers * nhid,nhid)
+            self.linear = nn.Linear(self.nlayers * nhid,nhid)
         if self.res_type == "snr":
             self.SnrList = nn.ModuleList()
-            for i in range(self.num_layers):
+            for i in range(self.nlayers):
                 self.SnrList.append(SNRModule(nodes_num, args))
 
 
@@ -65,12 +65,12 @@ class DataProcess(nn.Module):
         if self.res_type == 'initres':
             return hidden_list[0] + x
         if self.res_type == 'dense':
-            for i in range(self.numlayers):
+            for i in range(self.nlayers):
                 x = torch.cat([x, hidden_list[i]], dim=1)
             return self.liear[layer](x)
         if self.res_type == 'jk':
-            if layer == self.numlayers:
-                for i in range(1, self.numlayers):
+            if layer == self.nlayers:
+                for i in range(1, self.nlayers):
                     x = torch.cat([x, hidden_list[i]], dim=1)
                 return self.linear(x)
         
@@ -109,7 +109,7 @@ class DataProcess(nn.Module):
             return F.gelu(x)
         
 
-    def norm(self, x):
-        for norm_mathod in self.NormList:
-            x = norm_mathod(x)
+    def normalization(self, x):
+        for norm in self.NormList:
+            x = norm(x)
         return x

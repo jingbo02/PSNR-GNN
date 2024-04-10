@@ -47,10 +47,6 @@ def train(model, graph, optimizer, max_epoch, scheduler, num_classes, logger = N
     for epoch in epoch_iter:
         model.train()
 
-        # print(epoch)
-        # print(torch.cuda.memory_reserved(device = 1))
-        # print(torch.cuda.memory_allocated(device = 1))
-
         output = model(graph, x)
         loss_train = F.nll_loss(output[train_mask], label[train_mask])
 
@@ -63,16 +59,16 @@ def train(model, graph, optimizer, max_epoch, scheduler, num_classes, logger = N
             acc_val = evaluate(model, graph, x, val_mask)
             acc_test = evaluate(model, graph, x, test_mask)
 
-        # if acc_val > best_acc and save_model:
-        #     best_acc = acc_val
-        #     torch.save(model.state_dict(), "./checkpoint.pt")
+        if acc_val > best_acc and save_model:
+            best_acc = acc_val
+            torch.save(model.state_dict(), "./checkpoint.pt")
 
 
 
         if scheduler is not None:
             scheduler.step()
 
-        # epoch_iter.set_description(f"# Epoch {epoch}: train_loss: {loss_train.item():.4f} train_acc: {acc_train:.4f} val_acc: {acc_val:.4f} test_acc: {acc_test:.4f}")
+        epoch_iter.set_description(f"# Epoch {epoch}: train_loss: {loss_train.item():.4f} train_acc: {acc_train:.4f} val_acc: {acc_val:.4f} test_acc: {acc_test:.4f}")
 
     # return best_model
     # return model
