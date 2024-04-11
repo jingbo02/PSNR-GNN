@@ -10,11 +10,10 @@ from snrgnn.utils import (
     build_args,
     create_optimizer,
     set_random_seed,
-    TBLogger,
-    get_current_lr,
     load_best_configs,
     accuracy,
-    evaluate
+    evaluate,
+    build_wandb_args
 )
 from snrgnn.datasets.dataset import load_dataset, split_datasets
 # from graphmae.evaluation import node_classification_evaluation
@@ -70,12 +69,15 @@ def train(model, graph, optimizer, max_epoch):
 
 
 
-def main(args):
+def main():
+    wandb.init()
+    args = wandb.config
+    # pdb.set_trace()
     device = "cuda:" + str(args.device) if args.device >= 0 else "cpu"
     graph, (num_features, num_classes, num_node) = load_dataset(args.dataset, args)
     args.num_features = num_features
 
-
+    # print(args.split_dataset)
     if args.split_dataset:
         if args.loda_split:
             filename = os.path.join(args.pre_split_path, args.datase + '_splits.npz')
@@ -91,6 +93,8 @@ def main(args):
         splits_list[graph.ndata["train_mask"]] = 0  
         splits_list[graph.ndata["test_mask"]] = 1  
         splits_list[graph.ndata["val_mask"]] = 2   
+        splits_list = splits_list.reshape(1, -1)
+        # pdb.set_trace()
 
     graph = graph.to(device)    
 
@@ -100,6 +104,8 @@ def main(args):
         test_idx = torch.tensor(np.where(split == 1, True, False)).to(device)
         val_idx = torch.tensor(np.where(split == 2, True, False)).to(device)
         
+        # print(train_idx.shape, type(graph.ndata["train_mask"]))
+        # pdb.set_trace()
         graph.ndata["train_mask"] = train_idx
         graph.ndata["test_mask"] = test_idx
         graph.ndata["val_mask"] = val_idx
@@ -120,11 +126,15 @@ def main(args):
         print(f"# spilt: {i}, final_acc: {final_acc:.4f}±{final_acc_std:.4f}")
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == "__main__":
-    args = build_args()
-    if args.use_cfg:
-        args = load_best_configs(args, "configs.yml")
-    print(args)
-    main(args)
+# # Press the green button in the gutter to run the script.
+# if __name__ == "__main__":
+#     project_name= 'test'
+#     wandb.login(
+#         host='https://api.wandb.ai',
+#         key='aa45b3ed8e0b4f2ad798b9e7fd687c3be8d8cf50',
+#     )
+#     sweep_config = build_wandb_args()
+#     sweep_id = wandb.sweep(sweep_config, project=project_name)
+#     wandb.agent(sweep_id, main, count=1)
+
 

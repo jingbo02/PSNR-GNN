@@ -11,10 +11,10 @@ import dgl
 import torch
 import torch.nn as nn
 from torch import optim as optim
+import wandb
 
 
-
-logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
+# logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 
 
@@ -71,7 +71,45 @@ def build_args():
     args = parser.parse_args()
     return args
 
+def build_wandb_args():
+    args = {}
+    args["method"] = "grid"
+    metric = {
+        'name': 'avg_test',
+        'goal': 'maximize'   
+        }
+    args['metric'] = metric
+    args['parameters'] = {}
+    args['parameters'].update({
+        # Hyperparameters
+        'backbone': {'value': 'gcn'},
+        'n_layers': {'value': 2},
+        'residual_type': {'value': 'snr'},
+        'max_epoch': {'value': 500},
+        'randn_init': {'value': False}, # Initialization for parameter of SNRModule
+        'activation': {'value': 'elu'},
+        'seeds': {'value': [2024]}, #TODO 固定seed
+        'dataset': {'value': 'cora'},
+        'split_dataset': {'value': False},
+        'pre_split_path': {'value': './datasets/split_data'},                  
+        'loda_split': {'value': False}, #TODO delete save_split
+        'num_split': {'value': 5},
+        'device': {'value': 1},
+        'num_heads': {'value': 4}, # number of hidden attention heads
+        'optimizer': {'value': 'adam'},
+        'use_cfg': {'value': False}, # if load best config
+        'logging': {'value': False},
+        'log_path': {'value': './logging_data'},
 
+        # Hyperparameters Under Optimization
+        "n_hid": {'values': [64, 128, 256]},
+        'lr': {'values': [1e-3, 1e-4]}, # learning rate
+        'weight_decay': {'values': [5e-4]},
+        'drop': {'value': [0.1,0.1]},
+        'norm': {'value': []},
+        })
+
+    return args
 
 
 def create_optimizer(opt, model, lr, weight_decay, get_num_layer=None, get_layer_scale=None):
@@ -100,8 +138,6 @@ def create_optimizer(opt, model, lr, weight_decay, get_num_layer=None, get_layer
 
 
 
-
-
 def load_best_configs(args, path):
     with open(path, "r") as f:
         configs = yaml.load(f, yaml.FullLoader)
@@ -119,36 +155,6 @@ def load_best_configs(args, path):
         setattr(args, k, v)
     print("------ Use best configs ------")
     return args
-
-
-# ------ logging ------
-
-class TBLogger(object):
-    def __init__(self, log_path="./logging_data", name="run"):
-        super(TBLogger, self).__init__()
-
-        if not os.path.exists(log_path):
-            os.makedirs(log_path, exist_ok=True)
-
-        self.last_step = 0
-        self.log_path = log_path
-        raw_name = os.path.join(log_path, name)
-        name = raw_name
-        for i in range(1000):
-            name = raw_name + str(f"_{i}")
-            if not os.path.exists(name):
-                break
-        self.writer = SummaryWriter(logdir=name)
-
-    def note(self, metrics, step=None):
-        if step is None:
-            step = self.last_step
-        for key, value in metrics.items():
-            self.writer.add_scalar(key, value, step)
-        self.last_step = step
-
-    def finish(self):
-        self.writer.close()
 
 
 def accuracy(output, labels):
