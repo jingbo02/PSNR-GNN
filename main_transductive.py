@@ -89,6 +89,7 @@ def main():
                 os.makedirs(args.pre_split_path)
             np.savez(os.path.join(args.pre_split_path, args.dataset + '_splits.npz'), splits_list)
     else:
+        print("Using default split.")
         splits_list = np.zeros(num_node, dtype=int)
         splits_list[graph.ndata["train_mask"]] = 0  
         splits_list[graph.ndata["test_mask"]] = 1  
@@ -106,14 +107,15 @@ def main():
         
         # print(train_idx.shape, type(graph.ndata["train_mask"]))
         # pdb.set_trace()
-        graph.ndata["train_mask"] = train_idx
-        graph.ndata["test_mask"] = test_idx
-        graph.ndata["val_mask"] = val_idx
+        # graph.ndata["train_mask"] = train_idx
+        # graph.ndata["test_mask"] = test_idx
+        # graph.ndata["val_mask"] = val_idx
         
         acc_list = []
-        for j, seed in enumerate(args.seeds):
+        # for j, seed in enumerate(args.seeds):
+        for i in range(10):
             # print(f"####### Run {i} for seed {seed}")
-            set_random_seed(seed)
+            # set_random_seed(seed)
 
             model = BuildModel(args.backbone, num_features, args.n_hid, num_classes, args.n_layers, args.activation, args.norm, args.drop, args.residual_type, num_node).build(args)
             model = model.to(device)

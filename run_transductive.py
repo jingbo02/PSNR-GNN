@@ -14,7 +14,7 @@ def build_wandb_args():
     args['parameters'].update({
         # Hyperparameters
         'backbone': {'value': 'gcn'},
-        'n_layers': {'value': 2},
+        'n_layers': {'value': 64},
         'residual_type': {'value': 'snr'},
         'max_epoch': {'value': 500},
         'randn_init': {'value': False}, # Initialization for parameter of SNRModule
@@ -36,7 +36,7 @@ def build_wandb_args():
         "n_hid": {'values': [64, 128, 256]},
         'lr': {'values': [1e-3, 1e-4]}, # learning rate
         'weight_decay': {'values': [5e-4]},
-        'drop': {'value': [0.1,0.1]},
+        'drop': {'value': [0.5, 0]},
         'norm': {'value': []},
         })
 
