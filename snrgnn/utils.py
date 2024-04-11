@@ -41,13 +41,12 @@ def build_args():
     parser.add_argument("--activation", type=str, default="elu")
 
         
-    parser.add_argument("--seeds", type=int, nargs="+", default=[42]) #TO-DO 固定seed
+    parser.add_argument("--seeds", type=int, nargs="+", default=[2024]) #TO-DO 固定seed
     parser.add_argument("--dataset", type=str, default="cora")
     parser.add_argument("--split_dataset", action="store_true", default=False)
     parser.add_argument("--pre_split_path", type=str, default="./datasets/split_data")
     #TO-DO delete save_split
     parser.add_argument("--loda_split", action="store_true", default=False)
-    parser.add_argument("--save_split", action="store_true", default=False)
     parser.add_argument("--num_split", type=int, default=5)
 
 

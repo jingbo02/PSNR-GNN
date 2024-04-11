@@ -31,7 +31,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 
 
-def train(model, graph, optimizer, max_epoch, scheduler, num_classes, logger = None, save_model = False):
+def train(model, graph, optimizer, max_epoch):
     # logging.info("start training..")
 
     x = graph.ndata["feat"]
@@ -43,7 +43,7 @@ def train(model, graph, optimizer, max_epoch, scheduler, num_classes, logger = N
     epoch_iter = tqdm(range(max_epoch))
 
     best_acc = 0
-
+    final_acc = 0
     for epoch in epoch_iter:
         model.train()
 
@@ -59,12 +59,12 @@ def train(model, graph, optimizer, max_epoch, scheduler, num_classes, logger = N
             acc_val = evaluate(model, graph, x, val_mask)
             acc_test = evaluate(model, graph, x, test_mask)
 
-        if acc_val > best_acc and save_model:
+        if acc_val > best_acc :
             best_acc = acc_val
-
+            final_acc = acc_test
 
         epoch_iter.set_description(f"# Epoch {epoch}: train_loss: {loss_train.item():.4f} train_acc: {acc_train:.4f} val_acc: {acc_val:.4f} test_acc: {acc_test:.4f}")
-
+    return final_acc 
 
 
 
@@ -72,21 +72,9 @@ def train(model, graph, optimizer, max_epoch, scheduler, num_classes, logger = N
 
 def main(args):
     device = "cuda:" + str(args.device) if args.device >= 0 else "cpu"
-    # TO-DO
-    seeds = args.seeds
-    dataset_name = args.dataset
-
-    optim_type = args.optimizer 
-
-    lr = args.lr
-    weight_decay = args.weight_decay
-    logs = args.logging
-
-    graph, (num_features, num_classes, num_node) = load_dataset(dataset_name, args)
-
+    graph, (num_features, num_classes, num_node) = load_dataset(args.dataset, args)
     args.num_features = num_features
 
-    acc_list = []
 
     if args.split_dataset:
         if args.loda_split:
@@ -94,10 +82,10 @@ def main(args):
             splits_list = np.load(filename)
         else:
             splits_list = split_datasets(graph.ndata["label"], args.num_split)
-            if args.save_split:
-                if not os.path.exists(args.pre_split_path):
-                    os.makedirs(args.pre_split_path)
-                np.savez(os.path.join(args.pre_split_path, args.dataset + '_splits.npz'), splits_list)
+            # if args.save_split:
+            if not os.path.exists(args.pre_split_path):
+                os.makedirs(args.pre_split_path)
+            np.savez(os.path.join(args.pre_split_path, args.dataset + '_splits.npz'), splits_list)
     else:
         splits_list = np.zeros(num_node, dtype=int)
         splits_list[graph.ndata["train_mask"]] = 0  
@@ -112,29 +100,20 @@ def main(args):
         test_idx = torch.tensor(np.where(split == 1, True, False)).to(device)
         val_idx = torch.tensor(np.where(split == 2, True, False)).to(device)
         
-        # print(type(graph.ndata["train_mask"]), type(train_idx))
-
         graph.ndata["train_mask"] = train_idx
         graph.ndata["test_mask"] = test_idx
         graph.ndata["val_mask"] = val_idx
-
-        for j, seed in enumerate(seeds):
+        
+        acc_list = []
+        for j, seed in enumerate(args.seeds):
             # print(f"####### Run {i} for seed {seed}")
             set_random_seed(seed)
 
             model = BuildModel(args.backbone, num_features, args.n_hid, num_classes, args.n_layers, args.activation, args.norm, args.drop, args.residual_type, num_node).build(args)
             model = model.to(device)
+            optimizer = create_optimizer(args.optimizer, model, args.lr, args.weight_decay)
 
-            optimizer = create_optimizer(optim_type, model, lr, weight_decay)
-            print(next(model.parameters()).device)
-
-
-            train(model, graph, optimizer, args.max_epoch,  num_classes, logger, args.save_model)
-
-            
-            x = graph.ndata["feat"]
-            test_mask = graph.ndata['test_mask']
-            final_acc = evaluate(model, graph, x, test_mask)
+            final_acc = train(model, graph, optimizer, args.max_epoch)
             acc_list.append(final_acc.cpu())
 
         final_acc, final_acc_std = np.mean(acc_list), np.std(acc_list)
@@ -148,8 +127,4 @@ if __name__ == "__main__":
         args = load_best_configs(args, "configs.yml")
     print(args)
     main(args)
-
-
-
-
 
