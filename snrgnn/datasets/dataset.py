@@ -59,7 +59,7 @@ def split_datasets(label, num_split):
         print("The length of x_test: ",len(x_test))
         print("The summation: ",len(x_train)+len(x_val)+len(x_test))
 
-        split_libel = torch.tensor(np.zeros(len(data_list), dtype=int))
+        split_libel = torch.tensor(np.full(len(data_list), 3, dtype=int))
         split_libel[x_train] = 0  
         split_libel[x_test] = 1  
         split_libel[x_val] = 2   

@@ -16,7 +16,6 @@ from snrgnn.utils import (
     build_wandb_args
 )
 from snrgnn.datasets.dataset import load_dataset, split_datasets
-# from graphmae.evaluation import node_classification_evaluation
 from snrgnn.models import BuildModel
 
 import wandb
@@ -72,25 +71,22 @@ def train(model, graph, optimizer, max_epoch):
 def main():
     wandb.init()
     args = wandb.config
-    # pdb.set_trace()
     device = "cuda:" + str(args.device) if args.device >= 0 else "cpu"
     graph, (num_features, num_classes, num_node) = load_dataset(args.dataset, args)
     args.num_features = num_features
 
-    # print(args.split_dataset)
     if args.split_dataset:
         if args.loda_split:
             filename = os.path.join(args.pre_split_path, args.datase + '_splits.npz')
             splits_list = np.load(filename)
         else:
             splits_list = split_datasets(graph.ndata["label"], args.num_split)
-            # if args.save_split:
             if not os.path.exists(args.pre_split_path):
                 os.makedirs(args.pre_split_path)
             np.savez(os.path.join(args.pre_split_path, args.dataset + '_splits.npz'), splits_list)
     else:
         print("Using default split.")
-        splits_list = np.zeros(num_node, dtype=int)
+        splits_list = np.full(num_node, 3, dtype=int)
         splits_list[graph.ndata["train_mask"]] = 0  
         splits_list[graph.ndata["test_mask"]] = 1  
         splits_list[graph.ndata["val_mask"]] = 2   
@@ -104,18 +100,15 @@ def main():
         train_idx = torch.tensor(np.where(split == 0, True, False)).to(device)
         test_idx = torch.tensor(np.where(split == 1, True, False)).to(device)
         val_idx = torch.tensor(np.where(split == 2, True, False)).to(device)
-        
-        # print(train_idx.shape, type(graph.ndata["train_mask"]))
-        # pdb.set_trace()
-        # graph.ndata["train_mask"] = train_idx
-        # graph.ndata["test_mask"] = test_idx
-        # graph.ndata["val_mask"] = val_idx
+
+        graph.ndata["train_mask"] = train_idx
+        graph.ndata["test_mask"] = test_idx
+        graph.ndata["val_mask"] = val_idx
         
         acc_list = []
-        # for j, seed in enumerate(args.seeds):
-        for i in range(10):
-            # print(f"####### Run {i} for seed {seed}")
-            # set_random_seed(seed)
+        for j, seed in enumerate(args.seeds):
+            print(f"####### Run {j} for seed {seed}")
+            set_random_seed(seed)
 
             model = BuildModel(args.backbone, num_features, args.n_hid, num_classes, args.n_layers, args.activation, args.norm, args.drop, args.residual_type, num_node).build(args)
             model = model.to(device)
@@ -128,15 +121,5 @@ def main():
         print(f"# spilt: {i}, final_acc: {final_acc:.4f}±{final_acc_std:.4f}")
 
 
-# # Press the green button in the gutter to run the script.
-# if __name__ == "__main__":
-#     project_name= 'test'
-#     wandb.login(
-#         host='https://api.wandb.ai',
-#         key='aa45b3ed8e0b4f2ad798b9e7fd687c3be8d8cf50',
-#     )
-#     sweep_config = build_wandb_args()
-#     sweep_id = wandb.sweep(sweep_config, project=project_name)
-#     wandb.agent(sweep_id, main, count=1)
 
 

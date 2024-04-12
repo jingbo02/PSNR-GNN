@@ -1,6 +1,5 @@
 import wandb
 from main_transductive import main
-# Press the green button in the gutter to run the script.
 
 def build_wandb_args():
     args = {}
@@ -14,8 +13,8 @@ def build_wandb_args():
     args['parameters'].update({
         # Hyperparameters
         'backbone': {'value': 'gcn'},
-        'n_layers': {'value': 64},
-        'residual_type': {'value': 'snr'},
+        'n_layers': {'value': 2},
+        'residual_type': {'value': 'none'},
         'max_epoch': {'value': 500},
         'randn_init': {'value': False}, # Initialization for parameter of SNRModule
         'activation': {'value': 'elu'},
@@ -25,7 +24,7 @@ def build_wandb_args():
         'pre_split_path': {'value': './datasets/split_data'},                  
         'loda_split': {'value': False}, #TODO delete save_split
         'num_split': {'value': 5},
-        'device': {'value': 1},
+        'device': {'value': 0},
         'num_heads': {'value': 4}, # number of hidden attention heads
         'optimizer': {'value': 'adam'},
         'use_cfg': {'value': False}, # if load best config
