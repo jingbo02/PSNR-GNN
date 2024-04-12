@@ -5,7 +5,7 @@ def build_wandb_args():
     args = {}
     args["method"] = "grid"
     metric = {
-        'name': 'avg_test',
+        'name': 'final_acc',
         'goal': 'maximize'   
         }
     args['metric'] = metric
@@ -13,42 +13,37 @@ def build_wandb_args():
     args['parameters'].update({
         # Hyperparameters
         'backbone': {'value': 'gcn'},
-        'n_layers': {'value': 2},
-        'residual_type': {'value': 'none'},
+        'residual_type': {'value': 'init_res'},
         'max_epoch': {'value': 500},
         'randn_init': {'value': False}, # Initialization for parameter of SNRModule
         'activation': {'value': 'elu'},
-        'seeds': {'value': [2024]}, #TODO 固定seed
+        'seed': {'value': 2024}, 
         'dataset': {'value': 'cora'},
-        'split_dataset': {'value': False},
-        'pre_split_path': {'value': './datasets/split_data'},                  
-        'loda_split': {'value': False}, #TODO delete save_split
-        'num_split': {'value': 5},
+        'pre_split_path': {'value': 'datasets/split_data'},                  
+        'loda_split': {'value': True}, 
         'device': {'value': 0},
-        'num_heads': {'value': 4}, # number of hidden attention heads
+        'num_heads': {'value': 3}, # number of hidden attention heads
         'optimizer': {'value': 'adam'},
-        'use_cfg': {'value': False}, # if load best config
-        'logging': {'value': False},
-        'log_path': {'value': './logging_data'},
-
-        # Hyperparameters Under Optimization
-        "n_hid": {'values': [64, 128, 256]},
-        'lr': {'values': [1e-3, 1e-4]}, # learning rate
-        'weight_decay': {'values': [5e-4]},
+        "n_hid": {'value': 64},
         'drop': {'value': [0.5, 0]},
         'norm': {'value': []},
-        })
+
+        # Hyperparameters Under Optimization
+        'n_layers': {'values': [2,4,8,16,32,64]},
+        'lr': {'values': [1e-2, 1e-3]}, # learning rate
+        'weight_decay': {'values': [1e-3,5e-4,1e-4]},
+    })
 
     return args
 
 if __name__ == "__main__":
-    project_name = 'test'
+    project_name = 'Cora'
     wandb.login(
         host='https://api.wandb.ai',
-        key='aa45b3ed8e0b4f2ad798b9e7fd687c3be8d8cf50',
+        key='79bd072f9b61735f983f9da5acbd2b78383c4268',
     )
     sweep_config = build_wandb_args()
     sweep_id = wandb.sweep(sweep_config, project=project_name)
-    wandb.agent(sweep_id, main, count=1)
+    wandb.agent(sweep_id, main, count=36)
 
 

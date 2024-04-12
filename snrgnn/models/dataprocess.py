@@ -61,7 +61,7 @@ class DataProcess(nn.Module):
     def residual(self, hidden_list, x, layer):
         if self.res_type == 'res':
             return hidden_list[-1] + x
-        if self.res_type == 'initres':
+        if self.res_type == 'init_res':
             return hidden_list[0] + x
         if self.res_type == 'dense':
             for i in range(layer+1):
