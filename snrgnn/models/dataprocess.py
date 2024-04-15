@@ -24,7 +24,6 @@ class SNRModule(nn.Module):
         self.mean = nn.Parameter(torch.FloatTensor(mean))
         self.std = nn.Parameter(torch.FloatTensor(std))
 
-        self.coff_nn = nn.Linear(args.n_hid,1)
 
         self.gat_coff = GATConv(args.n_hid, 2, num_heads = 1)
 
@@ -67,7 +66,7 @@ class DataProcess(nn.Module):
             self.linear = nn.Linear(self.nlayers * nhid,nhid)
         if self.res_type == "snr":
             self.SnrList = nn.ModuleList()
-            for i in range(self.nlayers-1):
+            for i in range(self.nlayers - 1):
                 self.SnrList.append(SNRModule(nodes_num, args))
 
 
@@ -91,9 +90,8 @@ class DataProcess(nn.Module):
                 for i in range(0, self.nlayers):
                     x = torch.cat([x, hidden_list[i]], dim=1)
                 return self.linear(x)
-        
         if self.res_type == 'snr':
-            return hidden_list[0] + self.SnrList[layer-1](graph,hidden_list[0] - x, degree)
+            return hidden_list[0] + self.SnrList[layer-1](graph, hidden_list[0] - x, degree)
         
         if self.res_type == 'none':
             return x
