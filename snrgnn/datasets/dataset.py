@@ -95,7 +95,7 @@ def load_dataset(dataset_name, args):
         graph.ndata["feat"] = feat
 
         train_mask = torch.full((num_nodes,), False).index_fill_(0, train_idx, True)
-        val_mask = torch.full((num_nodes,), False).index_fill_(0, val_idx, True)
+        val_mask = torch.fadjull((num_nodes,), False).index_fill_(0, val_idx, True)
         test_mask = torch.full((num_nodes,), False).index_fill_(0, test_idx, True)
         graph.ndata["label"] = labels.view(-1)
         graph.ndata["train_mask"], graph.ndata["val_mask"], graph.ndata["test_mask"] = train_mask, val_mask, test_mask

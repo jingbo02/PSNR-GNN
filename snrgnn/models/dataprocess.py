@@ -4,10 +4,14 @@ import torch
 import torch.nn as nn
 import dgl
 import pdb
+from dgl.nn import GATConv,GraphConv
 
 class SNRModule(nn.Module):
     def __init__(self, nodes_num, args):
         super().__init__()
+        # list degree [] 
+        # mean std
+        # mask
         # Set the mean and standard deviation to learnable parameters
         self.nodes_num =  nodes_num
         if not args.randn_init:
@@ -20,12 +24,27 @@ class SNRModule(nn.Module):
         self.mean = nn.Parameter(torch.FloatTensor(mean))
         self.std = nn.Parameter(torch.FloatTensor(std))
 
-    def forward(self, input):
+        self.coff_nn = nn.Linear(args.n_hid,1)
+
+        self.gat_coff = GATConv(args.n_hid, 2, num_heads = 1)
+
+
+
+    def forward(self, graph, input, degree):
+
         x  = torch.randn(self.nodes_num,1)
         y = torch.ones(self.nodes_num,1)
         x = x.to(self.mean.device)
         y = y.to(self.mean.device)
-        return input * F.sigmoid(x*self.std + y*self.mean)
+
+        # 81.21
+        coff_gat = self.gat_coff(graph, input)
+        coff_gat = torch.mean(coff_gat,dim=1)
+        std = F.relu(coff_gat[:,0])
+        mean = F.relu(coff_gat[:,1])
+        std = std.view(-1,1)
+        mean = mean.view(-1,1)
+        return input * (F.sigmoid(x*std + y*mean) )
 
 
 
@@ -58,7 +77,7 @@ class DataProcess(nn.Module):
         if 'layer' in Norm:
             self.NormList.append(nn.LayerNorm(nhid))
 
-    def residual(self, hidden_list, x, layer):
+    def residual(self, hidden_list, x, layer, degree,graph):
         if self.res_type == 'res':
             return hidden_list[-1] + x
         if self.res_type == 'init_res':
@@ -74,7 +93,7 @@ class DataProcess(nn.Module):
                 return self.linear(x)
         
         if self.res_type == 'snr':
-            return hidden_list[0] + self.SnrList[layer-1](hidden_list[0] - x)
+            return hidden_list[0] + self.SnrList[layer-1](graph,hidden_list[0] - x, degree)
         
         if self.res_type == 'none':
             return x

@@ -78,20 +78,21 @@ def main():
         acc_list = []
         val_acc_list = []
         for i in range(splits_list.shape[0]):
-            split = splits_list[i]
-            train_idx = torch.tensor(np.where(split == 0, True, False)).to(device)
-            test_idx = torch.tensor(np.where(split == 1, True, False)).to(device)
-            val_idx = torch.tensor(np.where(split == 2, True, False)).to(device)
+            # split = splits_list[i]
+            # train_idx = torch.tensor(np.where(split == 0, True, False)).to(device)
+            # test_idx = torch.tensor(np.where(split == 1, True, False)).to(device)
+            # val_idx = torch.tensor(np.where(split == 2, True, False)).to(device)
 
-            graph.ndata["train_mask"] = train_idx
-            graph.ndata["test_mask"] = test_idx
-            graph.ndata["val_mask"] = val_idx
+            # graph.ndata["train_mask"] = train_idx
+            # graph.ndata["test_mask"] = test_idx
+            # graph.ndata["val_mask"] = val_idx
         
             model = BuildModel(args.backbone, num_features, args.n_hid, num_classes, args.n_layers, args.activation, args.norm, args.drop, args.residual_type, num_node).build(args)
             model = model.to(device)
             optimizer = create_optimizer(args.optimizer, model, args.lr, args.weight_decay)
 
             best_acc, final_acc = train(model, graph, optimizer, args.max_epoch)
+            wandb.log({'process_acc':final_acc})
             val_acc_list.append(best_acc.cpu())
             acc_list.append(final_acc.cpu())
 
