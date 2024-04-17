@@ -17,20 +17,20 @@ def build_wandb_args():
         'max_epoch': {'value': 500},
         'randn_init': {'value': False}, # Initialization for parameter of SNRModule
         'activation': {'value': 'elu'},
-        'seed': {'value': 2024}, 
+        'seed': {'value': 42}, 
         'dataset': {'value': 'cora'},
         'pre_split_path': {'value': 'split_datasets/'},                  
         'loda_split': {'value': True}, 
-        'device': {'value': 1},
+        'device': {'value': 3},
         'num_heads': {'value': 3}, # number of hidden attention heads
         'optimizer': {'value': 'adam'},
-        "n_hid": {'value': 64},
+        "n_hid": {'value': 128},
         'drop': {'value': [0.5, 0]},
         'norm': {'value': []},
 
         # Hyperparameters Under Optimization
         'n_layers': {'values': [2]},
-        'lr': {'values': [1e-2,1e-3]}, # learning rate
+        'lr': {'values': [1e-2]}, # learning rate
         'weight_decay': {'values': [5e-4]},
     })
 

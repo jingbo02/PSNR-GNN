@@ -34,6 +34,7 @@ def train(model, graph, optimizer, max_epoch):
 
     best_acc = 0
     final_acc = 0
+    cnt = 0
     for epoch in epoch_iter:
         model.train()
 
@@ -52,6 +53,10 @@ def train(model, graph, optimizer, max_epoch):
         if acc_val > best_acc :
             best_acc = acc_val
             final_acc = acc_test
+        else:
+            cnt += 1
+        if cnt > 100:
+            break
 
         epoch_iter.set_description(f"# Epoch {epoch}: train_loss: {loss_train.item():.4f} train_acc: {acc_train:.4f} val_acc: {acc_val:.4f} test_acc: {acc_test:.4f}")
     return best_acc, final_acc 
@@ -78,14 +83,14 @@ def main():
         acc_list = []
         val_acc_list = []
         for i in range(splits_list.shape[0]):
-            # split = splits_list[i]
-            # train_idx = torch.tensor(np.where(split == 0, True, False)).to(device)
-            # test_idx = torch.tensor(np.where(split == 1, True, False)).to(device)
-            # val_idx = torch.tensor(np.where(split == 2, True, False)).to(device)
+            split = splits_list[i]
+            train_idx = torch.tensor(np.where(split == 0, True, False)).to(device)
+            test_idx = torch.tensor(np.where(split == 1, True, False)).to(device)
+            val_idx = torch.tensor(np.where(split == 2, True, False)).to(device)
 
-            # graph.ndata["train_mask"] = train_idx
-            # graph.ndata["test_mask"] = test_idx
-            # graph.ndata["val_mask"] = val_idx
+            graph.ndata["train_mask"] = train_idx
+            graph.ndata["test_mask"] = test_idx
+            graph.ndata["val_mask"] = val_idx
         
             model = BuildModel(args.backbone, num_features, args.n_hid, num_classes, args.n_layers, args.activation, args.norm, args.drop, args.residual_type, num_node).build(args)
             model = model.to(device)
@@ -95,6 +100,8 @@ def main():
             wandb.log({'process_acc':final_acc})
             val_acc_list.append(best_acc.cpu())
             acc_list.append(final_acc.cpu())
+            print(final_acc,np.mean(acc_list))
+
 
         final_acc, final_acc_std = np.mean(acc_list), np.std(acc_list)
         val_acc, val_acc_std = np.mean(val_acc_list), np.std(val_acc_list)

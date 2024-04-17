@@ -10,7 +10,8 @@ from dgl.data import (
     TUDataset, 
     CoraGraphDataset, 
     CiteseerGraphDataset, 
-    PubmedGraphDataset
+    PubmedGraphDataset,
+    CoauthorCSDataset,
 )
 from ogb.nodeproppred import DglNodePropPredDataset
 from dgl.data.ppi import PPIDataset
@@ -25,7 +26,8 @@ GRAPH_DICT = {
     "cora": CoraGraphDataset,
     "citeseer": CiteseerGraphDataset,
     "pubmed": PubmedGraphDataset,
-    "ogbn-arxiv": DglNodePropPredDataset
+    "ogbn-arxiv": DglNodePropPredDataset,
+    "cs": CoauthorCSDataset,
 }
 
 
@@ -52,8 +54,9 @@ def split_datasets(label):
     data_list = [i for i in range(len(label))]
     for random_state in range(num_split): 
         
-        x_train, x_temp, y_train, y_temp = train_test_split(data_list, label, test_size=0.8, stratify=label, random_state=random_state)
-        x_val, x_test, y_val, y_test = train_test_split(x_temp, y_temp, test_size=0.75, stratify=y_temp, random_state=random_state)
+        x_train, x_temp, y_train, y_temp = train_test_split(data_list, label, train_size=140, stratify=label, random_state=random_state)
+        x_val, x_tmp, y_val, y_tmp = train_test_split(x_temp, y_temp, train_size=500, stratify=y_temp, random_state=random_state)
+        x_test, x_t, y_test, y_t = train_test_split(x_tmp, y_tmp, train_size=1000, stratify=y_tmp, random_state=random_state)
         print(f"No.{random_state} split:")
         print("The length of x_train: ",len(x_train))
         print("The length of x_val: ",len(x_val))
