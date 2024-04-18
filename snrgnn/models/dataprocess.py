@@ -5,6 +5,11 @@ import torch.nn as nn
 import dgl
 import pdb
 from dgl.nn import GATConv,GraphConv
+import math
+import torch
+
+import torch.nn as nn
+
 
 
 
@@ -12,35 +17,37 @@ class SNRModule(nn.Module):
     def __init__(self, nodes_num, args):
         super().__init__()
         self.nodes_num =  nodes_num
-        if not args.randn_init:
-            mean = torch.zeros(self.nodes_num,1)
-            std = torch.ones(self.nodes_num,1)
-        else:
-            mean = F.sigmoid(torch.randn(self.nodes_num,1))
-            std = F.sigmoid(torch.randn(self.nodes_num,1))
-
-        self.mean = nn.Parameter(torch.FloatTensor(mean))
-        self.std = nn.Parameter(torch.FloatTensor(std))
 
         self.gat_coff = GATConv(args.n_hid, 2, num_heads = 1)
 
+        self.d_model = args.n_hid
+        self.max_seq_len = args.n_layers +  3
 
+        pe = torch.zeros(self.max_seq_len, self.d_model)
+        position = torch.arange(0, self.max_seq_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, self.d_model, 2).float()
+                             * (-math.log(10000.0) / self.d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
 
-    def forward(self, graph, input):
+        self.pe = pe
+        self.pe_coff = nn.Parameter(torch.tensor(0.1))
+
+    def forward(self, graph, input, t):
 
         x  = torch.randn(self.nodes_num,1)
         y = torch.ones(self.nodes_num,1)
-        x = x.to(self.mean.device)
-        y = y.to(self.mean.device)
+        x = x.to(graph.device)
+        y = y.to(graph.device)
 
-        #81.21
+        input = input + self.pe_coff*self.pe[t+1].to(input.device)
         coff_gat = self.gat_coff(graph, input)
-        coff_gat = torch.mean(coff_gat,dim=1)
+        coff_gat = torch.mean(coff_gat, dim=1)
         std = F.relu(coff_gat[:,0])
         mean = F.relu(coff_gat[:,1])
         std = std.view(-1,1)
         mean = mean.view(-1,1)
-        return input * (F.sigmoid(x*std + y*mean))
+        return input * (F.sigmoid(x * std + y*mean))
 
 
 class DataProcess(nn.Module):
@@ -62,8 +69,7 @@ class DataProcess(nn.Module):
             self.linear = nn.Linear(self.nlayers * nhid,nhid)
         if self.res_type == "snr":
             self.SnrList = nn.ModuleList()
-            for i in range(self.nlayers-1):
-                self.SnrList.append(SNRModule(nodes_num, args))
+            self.SnrList.append(SNRModule(nodes_num, args))
 
 
         self.NormList = nn.ModuleList()
@@ -72,7 +78,7 @@ class DataProcess(nn.Module):
         if 'layer' in Norm:
             self.NormList.append(nn.LayerNorm(nhid))
 
-    def residual(self, hidden_list, x, layer,graph):
+    def residual(self, hidden_list, x, layer, graph):
         if self.res_type == 'res':
             return hidden_list[-1] + x
         if self.res_type == 'init_res':
@@ -88,7 +94,7 @@ class DataProcess(nn.Module):
                 return self.linear(x)
         
         if self.res_type == 'snr':
-            return hidden_list[0] + self.SnrList[layer-1](graph,hidden_list[0] - x)
+            return hidden_list[0] + self.SnrList[0](graph, hidden_list[0] - x, layer-1)
         
         if self.res_type == 'none':
             return x

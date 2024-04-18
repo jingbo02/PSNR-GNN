@@ -58,7 +58,7 @@ def train(model, graph, optimizer, max_epoch):
         if cnt > 100:
             break
 
-        epoch_iter.set_description(f"# Epoch {epoch}: train_loss: {loss_train.item():.4f} train_acc: {acc_train:.4f} val_acc: {acc_val:.4f} test_acc: {acc_test:.4f}")
+        epoch_iter.set_description(f"# Epoch {epoch}: train_loss: {loss_train.item():.4f} train_acc: {acc_train:.4f} val_acc: {acc_val:.4f} test_acc: {acc_test:.4f}  final_acc: {final_acc:.4f} ")
     return best_acc, final_acc 
 
 

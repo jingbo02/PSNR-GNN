@@ -15,13 +15,12 @@ def build_wandb_args():
         'backbone': {'value': 'gcn'},
         'residual_type': {'value': 'snr'},
         'max_epoch': {'value': 500},
-        'randn_init': {'value': False}, # Initialization for parameter of SNRModule
         'activation': {'value': 'elu'},
         'seed': {'value': 42}, 
         'dataset': {'value': 'cora'},
         'pre_split_path': {'value': 'split_datasets/'},                  
         'loda_split': {'value': True}, 
-        'device': {'value': 3},
+        'device': {'value': 5},
         'num_heads': {'value': 3}, # number of hidden attention heads
         'optimizer': {'value': 'adam'},
         "n_hid": {'value': 128},
@@ -29,8 +28,8 @@ def build_wandb_args():
         'norm': {'value': []},
 
         # Hyperparameters Under Optimization
-        'n_layers': {'values': [2]},
-        'lr': {'values': [1e-2]}, # learning rate
+        'n_layers': {'values': [2,4,8,16,32,64]},
+        'lr': {'values': [1e-2,1e-3]}, # learning rate
         'weight_decay': {'values': [5e-4]},
     })
 
