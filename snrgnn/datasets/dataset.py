@@ -12,6 +12,8 @@ from dgl.data import (
     CiteseerGraphDataset, 
     PubmedGraphDataset,
     CoauthorCSDataset,
+    AmazonCoBuyPhotoDataset,
+    CoauthorPhysicsDataset
 )
 from ogb.nodeproppred import DglNodePropPredDataset
 from dgl.data.ppi import PPIDataset
@@ -27,8 +29,24 @@ GRAPH_DICT = {
     "citeseer": CiteseerGraphDataset,
     "pubmed": PubmedGraphDataset,
     "ogbn-arxiv": DglNodePropPredDataset,
-    "cs": CoauthorCSDataset,
+    "coauther_cs": CoauthorCSDataset,
+    'amazon_photo': AmazonCoBuyPhotoDataset,
+    'coauther_phy':CoauthorPhysicsDataset
 }
+
+
+def load_inductive_dataset():
+    batch_size = 1
+    train_dataset = PPIDataset(mode='train')
+    valid_dataset = PPIDataset(mode='valid')
+    test_dataset = PPIDataset(mode='test')
+    train_dataloader = GraphDataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    valid_dataloader = GraphDataLoader(valid_dataset, batch_size=batch_size, shuffle=False)
+    test_dataloader = GraphDataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    g = train_dataset[0]
+    num_classes = train_dataset.num_labels
+    num_features = g.ndata['feat'].shape[1]
+    return train_dataloader, valid_dataloader, test_dataloader, num_classes, num_features
 
 
 def preprocess(graph):
@@ -52,9 +70,13 @@ def split_datasets(label):
     split_list = []
     num_split = 10
     data_list = [i for i in range(len(label))]
+
+    label_ = np.array(label)
+    num_class = len(Counter(label_))
+    print("The number of class: ", num_class)
     for random_state in range(num_split): 
         
-        x_train, x_temp, y_train, y_temp = train_test_split(data_list, label, train_size=140, stratify=label, random_state=random_state)
+        x_train, x_temp, y_train, y_temp = train_test_split(data_list, label, train_size=20*num_class, stratify=label, random_state=random_state)
         x_val, x_tmp, y_val, y_tmp = train_test_split(x_temp, y_temp, train_size=500, stratify=y_temp, random_state=random_state)
         x_test, x_t, y_test, y_t = train_test_split(x_tmp, y_tmp, train_size=1000, stratify=y_tmp, random_state=random_state)
         print(f"No.{random_state} split:")
@@ -110,47 +132,4 @@ def load_dataset(dataset_name, args):
     num_classes = dataset.num_classes
     num_nodes = graph.num_nodes()
     return graph, (num_features, num_classes, num_nodes)
-
-
-def load_inductive_dataset(dataset_name):
-    if dataset_name == "ppi":
-        batch_size = 2
-        # define loss function
-        # create the dataset
-        train_dataset = PPIDataset(mode='train')
-        valid_dataset = PPIDataset(mode='valid')
-        test_dataset = PPIDataset(mode='test')
-        train_dataloader = GraphDataLoader(train_dataset, batch_size=batch_size)
-        valid_dataloader = GraphDataLoader(valid_dataset, batch_size=batch_size, shuffle=False)
-        test_dataloader = GraphDataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-        eval_train_dataloader = GraphDataLoader(train_dataset, batch_size=batch_size, shuffle=False)
-        g = train_dataset[0]
-        num_classes = train_dataset.num_labels
-        num_features = g.ndata['feat'].shape[1]
-    else:
-        _args = namedtuple("dt", "dataset")
-        dt = _args(dataset_name)
-        batch_size = 1
-        dataset = load_data(dt)
-        num_classes = dataset.num_classes
-
-        g = dataset[0]
-        num_features = g.ndata["feat"].shape[1]
-
-        train_mask = g.ndata['train_mask']
-        feat = g.ndata["feat"]
-        feat = scale_feats(feat)
-        g.ndata["feat"] = feat
-
-        g = g.remove_self_loop()
-        g = g.add_self_loop()
-
-        train_nid = np.nonzero(train_mask.data.numpy())[0].astype(np.int64)
-        train_g = dgl.node_subgraph(g, train_nid)
-        train_dataloader = [train_g]
-        valid_dataloader = [g]
-        test_dataloader = valid_dataloader
-        eval_train_dataloader = [train_g]
-        
-    return train_dataloader, valid_dataloader, test_dataloader, eval_train_dataloader, num_features, num_classes
 

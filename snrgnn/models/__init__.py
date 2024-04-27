@@ -2,7 +2,7 @@ import torch.nn.functional as F
 from dgl import DropEdge
 import torch
 import torch.nn as nn
-from .gcn import GCN
+from .gcn import GCN, GCNppi
 from .gat import GAT
 from .sage import GraphSage
 
@@ -32,3 +32,7 @@ class BuildModel():
         if self.model_name == 'sage':
             #TODO
             pass
+        if self.model_name == 'gcnppi':
+            return gcn.GCNppi(self.nfeat, self.nhid, self.nclass, self.num_layers, self.activation, self.norm, self.drop, self.residual, self.num_node, args)
+        if self.model_name == 'gatppi':
+            return gat.GATppi(self.nfeat, self.nhid, self.nclass, self.num_layers, self.activation, self.norm, self.drop, self.residual, self.num_node, args)

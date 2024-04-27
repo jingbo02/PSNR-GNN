@@ -11,6 +11,7 @@ from snrgnn.utils import (
     accuracy,
     evaluate
 )
+
 from snrgnn.datasets.dataset import load_dataset, split_datasets
 from snrgnn.models import BuildModel
 
@@ -18,6 +19,8 @@ import wandb
 
 
 import sys, os
+import os
+import shutil
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -63,7 +66,18 @@ def train(model, graph, optimizer, max_epoch):
 
 
 def main():
-    with wandb.init():
+    if not os.path.exists("./wandb_drop_out_7"):
+        os.makedirs("./wandb_drop_out_7")
+    with wandb.init(dir = "./wandb_drop_out_7"):
+    # with wandb.init():
+        folder_path = "./wandb_drop_out_7"
+        for filename in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+
         args = wandb.config
         device = "cuda:" + str(args.device) if args.device >= 0 else "cpu"
         graph, (num_features, num_classes, num_node) = load_dataset(args.dataset, args)
@@ -76,7 +90,8 @@ def main():
             splits_list = split_datasets(graph.ndata["label"])
             if not os.path.exists(args.pre_split_path):
                 os.makedirs(args.pre_split_path)
-            np.save(os.path.join(args.pre_split_path, args.dataset + '_splits.npy'), splits_list)
+            np.save(os.path.join(args.pre_split_path, args.dataset + '_splits.npy'), splits_list)        
+
 
         graph = graph.to(device)    
         set_random_seed(args.seed)
@@ -102,11 +117,11 @@ def main():
             acc_list.append(final_acc.cpu())
             print(final_acc,np.mean(acc_list))
 
-
         final_acc, final_acc_std = np.mean(acc_list), np.std(acc_list)
         val_acc, val_acc_std = np.mean(val_acc_list), np.std(val_acc_list)
         wandb.log({"final_acc": final_acc, "final_acc_std": final_acc_std, "val_acc": val_acc, "val_acc_std": val_acc_std})
         wandb.finish()
+
 
 
 
