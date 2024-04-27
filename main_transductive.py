@@ -65,63 +65,63 @@ def train(model, graph, optimizer, max_epoch):
     return best_acc, final_acc 
 
 
-def main():
-    if not os.path.exists("./wandb_drop_out_7"):
-        os.makedirs("./wandb_drop_out_7")
-    with wandb.init(dir = "./wandb_drop_out_7"):
+def main(args):
+    # if not os.path.exists("./wandb_drop_out_7"):
+    #     os.makedirs("./wandb_drop_out_7")
+    # with wandb.init(dir = "./wandb_drop_out_7"):
     # with wandb.init():
-        folder_path = "./wandb_drop_out_7"
-        for filename in os.listdir(folder_path):
-            file_path = os.path.join(folder_path, filename)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
+        # folder_path = "./wandb_drop_out_7"
+        # for filename in os.listdir(folder_path):
+        #     file_path = os.path.join(folder_path, filename)
+        #     if os.path.isfile(file_path):
+        #         os.remove(file_path)
+        #     elif os.path.isdir(file_path):
+        #         shutil.rmtree(file_path)
 
-        args = wandb.config
-        device = "cuda:" + str(args.device) if args.device >= 0 else "cpu"
-        graph, (num_features, num_classes, num_node) = load_dataset(args.dataset, args)
-        args.num_features = num_features
+    # args = wandb.config
+    device = "cuda:" + str(args.device) if args.device >= 0 else "cpu"
+    graph, (num_features, num_classes, num_node) = load_dataset(args.dataset, args)
+    args.num_features = num_features
 
-        if args.loda_split:
-            filename = os.path.join(args.pre_split_path, args.dataset + '_splits.npy')
-            splits_list = np.load(filename)
-        else:
-            splits_list = split_datasets(graph.ndata["label"])
-            if not os.path.exists(args.pre_split_path):
-                os.makedirs(args.pre_split_path)
-            np.save(os.path.join(args.pre_split_path, args.dataset + '_splits.npy'), splits_list)        
+    if args.loda_split:
+        filename = os.path.join(args.pre_split_path, args.dataset + '_splits.npy')
+        splits_list = np.load(filename)
+    else:
+        splits_list = split_datasets(graph.ndata["label"])
+        if not os.path.exists(args.pre_split_path):
+            os.makedirs(args.pre_split_path)
+        np.save(os.path.join(args.pre_split_path, args.dataset + '_splits.npy'), splits_list)        
 
 
-        graph = graph.to(device)    
-        set_random_seed(args.seed)
-        acc_list = []
-        val_acc_list = []
-        for i in range(splits_list.shape[0]):
-            split = splits_list[i]
-            train_idx = torch.tensor(np.where(split == 0, True, False)).to(device)
-            test_idx = torch.tensor(np.where(split == 1, True, False)).to(device)
-            val_idx = torch.tensor(np.where(split == 2, True, False)).to(device)
+    graph = graph.to(device)    
+    set_random_seed(args.seed)
+    acc_list = []
+    val_acc_list = []
+    for i in range(splits_list.shape[0]):
+        split = splits_list[i]
+        train_idx = torch.tensor(np.where(split == 0, True, False)).to(device)
+        test_idx = torch.tensor(np.where(split == 1, True, False)).to(device)
+        val_idx = torch.tensor(np.where(split == 2, True, False)).to(device)
 
-            graph.ndata["train_mask"] = train_idx
-            graph.ndata["test_mask"] = test_idx
-            graph.ndata["val_mask"] = val_idx
-        
-            model = BuildModel(args.backbone, num_features, args.n_hid, num_classes, args.n_layers, args.activation, args.norm, args.drop, args.residual_type, num_node).build(args)
-            model = model.to(device)
-            optimizer = create_optimizer(args.optimizer, model, args.lr, args.weight_decay)
+        graph.ndata["train_mask"] = train_idx
+        graph.ndata["test_mask"] = test_idx
+        graph.ndata["val_mask"] = val_idx
+    
+        model = BuildModel(args.backbone, num_features, args.n_hid, num_classes, args.n_layers, args.activation, args.norm, args.drop, args.residual_type, num_node).build(args)
+        model = model.to(device)
+        optimizer = create_optimizer(args.optimizer, model, args.lr, args.weight_decay)
 
-            best_acc, final_acc = train(model, graph, optimizer, args.max_epoch)
-            wandb.log({'process_acc':final_acc})
-            val_acc_list.append(best_acc.cpu())
-            acc_list.append(final_acc.cpu())
-            print(final_acc,np.mean(acc_list))
+        best_acc, final_acc = train(model, graph, optimizer, args.max_epoch)
+        # wandb.log({'process_acc':final_acc})
+        val_acc_list.append(best_acc.cpu())
+        acc_list.append(final_acc.cpu())
+        print(final_acc,np.mean(acc_list))
 
-        final_acc, final_acc_std = np.mean(acc_list), np.std(acc_list)
-        val_acc, val_acc_std = np.mean(val_acc_list), np.std(val_acc_list)
-        wandb.log({"final_acc": final_acc, "final_acc_std": final_acc_std, "val_acc": val_acc, "val_acc_std": val_acc_std})
-        wandb.finish()
-
+    final_acc, final_acc_std = np.mean(acc_list), np.std(acc_list)
+    val_acc, val_acc_std = np.mean(val_acc_list), np.std(val_acc_list)
+        # wandb.log({"final_acc": final_acc, "final_acc_std": final_acc_std, "val_acc": val_acc, "val_acc_std": val_acc_std})
+        # wandb.finish()
+    return final_acc, final_acc_std, val_acc, val_acc_std
 
 
 
