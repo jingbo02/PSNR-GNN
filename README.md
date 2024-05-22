@@ -1,4 +1,4 @@
-# SNR-GNN
-SNR-GNN: Deep Graph Neural Networks via Flexible Neighborhood Subgraph Aggregation
+# PSNR-GNN
+Deep Graph Neural Networks via Posteriori-Sampling-based Node-Adaptive Residual Module
 
 
