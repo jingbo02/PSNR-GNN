@@ -1,7 +1,6 @@
 import pandas as pd
 from main_transductive import main
 import argparse
-import wandb
 import itertools
 
 sweep_config = {
@@ -9,24 +8,23 @@ sweep_config = {
     'max_epoch': [500],
     'activation': ['elu'],
     'seed': [42], 
-    'pre_split_path': ['split_datasets/'],      # Path of data splits            
-    'loda_split':[True],      # If load split prepared
+    'pre_split_path': ['split_datasets/'],      # Path of data splits         
+    'loda_split':[False],      # If load prepared splits. If False, then it will randomly split the datasets.
     'device': [0],
-    'num_heads': [3], # number of hidden attention heads
+    'num_heads': [3], # Number of hidden attention heads for the backbone GAT
     'optimizer': ['adam'],
     'n_hid': [64],
     'norm': [[]],  #TODO Type of Normalization: 
     'drop':[[0.5, 0]], # [drop_out_ratio, drop_edge_ratio]
     'layer_emb': [True], # If add layer embedding for PSNR
-    'if_mv': [False], # If adapt the missing vector setting
     'if_early_stop': [True],
     'split_type': ['semi'], # Type of Datasets splits: 'semi' for classical, 'hetero' for train:val:test = 6:2:2, 'full' for train:val:test = 2:2:6
     'n_layers': [2, 4, 8, 16, 32, 64],
     'lr': [1e-2, 1e-3], # learning rate
-    'residual_type': ['psnr'],
+    'residual_type': ['psnr', 'None'],
     'weight_decay': [5e-4],
     'dataset': ['cora', 'citeseer', 'pubmed', 'coauther_cs', 'coauther_phy', 'amazon_photo'],
-    'coef_encoder': ['mlp'],
+    'coef_encoder': ['sage'],  # Type of the encoder of PSNR
 }
 
 project_name = 'baseline'
@@ -37,7 +35,6 @@ args = parser.parse_args()
 
 print(project_name)
 
-# i = 0
 for values in itertools.product(*sweep_config.values()):
 
     params = dict(zip(sweep_config.keys(), values))

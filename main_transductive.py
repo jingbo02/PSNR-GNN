@@ -24,8 +24,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 
 
-def train(model, graph, optimizer, max_epoch, if_mv, if_early_stop):
-
+def train(model, graph, optimizer, max_epoch, if_early_stop):
     x = graph.ndata["feat"]
 
     label = graph.ndata['label']
@@ -33,9 +32,6 @@ def train(model, graph, optimizer, max_epoch, if_mv, if_early_stop):
     val_mask = graph.ndata['val_mask']
     test_mask = graph.ndata['test_mask']
     
-    if if_mv :
-        x[val_mask] = 0
-        x[test_mask] = 0
         
     epoch_iter = tqdm(range(max_epoch))
 
@@ -78,7 +74,7 @@ def main(args):
         filename = os.path.join(args.pre_split_path, args.dataset + '_splits.npy')
         splits_list = np.load(filename)
     else:
-        splits_list = split_datasets(graph.ndata["label"])
+        splits_list = split_datasets(graph.ndata["label"], args)
         if not os.path.exists(args.pre_split_path):
             os.makedirs(args.pre_split_path)
         np.save(os.path.join(args.pre_split_path, args.dataset + '_splits.npy'), splits_list)        
@@ -102,7 +98,7 @@ def main(args):
         model = model.to(device)
         optimizer = create_optimizer(args.optimizer, model, args.lr, args.weight_decay)
 
-        best_acc, final_acc = train(model, graph, optimizer, args.max_epoch, args.if_mv, args.if_early_stop)
+        best_acc, final_acc = train(model, graph, optimizer, args.max_epoch, args.if_early_stop)
         val_acc_list.append(best_acc.cpu())
         acc_list.append(final_acc.cpu())
 

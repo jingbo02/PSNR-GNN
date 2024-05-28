@@ -15,9 +15,6 @@ from dgl.data import (
     AmazonCoBuyPhotoDataset,
     CoauthorPhysicsDataset,
     ChameleonDataset,
-    CornellDataset,
-    TexasDataset,
-    WisconsinDataset,
     SquirrelDataset,
 )
 from ogb.nodeproppred import DglNodePropPredDataset
@@ -99,8 +96,8 @@ def split_datasets(label, args):
                 if args.split_type == 'hetero':
                     train_idx, test_val_idx = train_test_split(indices, test_size=0.4, random_state=random_state)
                     test_idx, val_idx = train_test_split(test_val_idx, test_size=0.5, random_state=random_state)
-                if args.split_type == 'semi':
-                    train_idx, x_temp, y_train, y_temp = train_test_split(data_list, label, train_size=20*num_class, stratify=label, random_state=random_state)
+                if args.split_type == 'semi': 
+                    train_idx, x_temp, y_train, y_temp = train_test_split(data_list, label, train_size=20 * num_class, stratify=label, random_state=random_state)
                     val_idx, x_tmp, y_val, y_tmp = train_test_split(x_temp, y_temp, train_size=500, stratify=y_temp, random_state=random_state)
                     test_idx, x_t, y_test, y_t = train_test_split(x_tmp, y_tmp, train_size=1000, stratify=y_tmp, random_state=random_state)
                 if args.split_type == 'full':

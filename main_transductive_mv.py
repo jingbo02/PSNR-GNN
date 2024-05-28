@@ -23,8 +23,7 @@ import shutil
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 
-
-def train(model, graph, optimizer, max_epoch, if_mv, if_early_stop):
+def train(model, graph, optimizer, max_epoch, if_early_stop):
 
     x = graph.ndata["feat"]
 
@@ -33,9 +32,9 @@ def train(model, graph, optimizer, max_epoch, if_mv, if_early_stop):
     val_mask = graph.ndata['val_mask']
     test_mask = graph.ndata['test_mask']
     
-    if if_mv :
-        x[val_mask] = 0
-        x[test_mask] = 0
+    # For Missing Vector Setting
+    x[val_mask] = 0
+    x[test_mask] = 0
         
     epoch_iter = tqdm(range(max_epoch))
 
@@ -96,7 +95,7 @@ def main(args):
         model = model.to(device)
         optimizer = create_optimizer(args.optimizer, model, args.lr, args.weight_decay)
 
-        best_acc, final_acc = train(model, graph, optimizer, args.max_epoch, args.if_mv, args.if_early_stop)
+        best_acc, final_acc = train(model, graph, optimizer, args.max_epoch, args.if_early_stop)
         val_acc_list.append(best_acc.cpu())
         acc_list.append(final_acc.cpu())
 
