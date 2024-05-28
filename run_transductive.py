@@ -1,52 +1,59 @@
-import wandb
+import pandas as pd
 from main_transductive import main
+import argparse
+import wandb
+import itertools
 
-def build_wandb_args():
-    args = {}
-    args["method"] = "grid"
-    metric = {
-        'name': 'final_acc',
-        'goal': 'maximize'   
-        }
-    args['metric'] = metric
-    args['parameters'] = {}
-    args['parameters'].update({
-        # Hyperparameters
-        'backbone': {'value': 'gcn'},
-        'residual_type': {'value': 'snr'},
-        'max_epoch': {'value': 500},
-        'activation': {'value': 'elu'},
-        'seed': {'value': 42}, 
-        'dataset': {'value': 'cora'},
-        'pre_split_path': {'value': 'split_datasets/'},                  
-        'loda_split': {'value': True}, 
-        'device': {'value': 5},
-        'num_heads': {'value': 3}, # number of hidden attention heads
-        'optimizer': {'value': 'adam'},
-        "n_hid": {'value': 128},
-        'drop': {'value': [0.5, 0]},
-        'norm': {'value': []},
+sweep_config = {
+    'backbone': ['gcn', 'gat'],
+    'max_epoch': [500],
+    'activation': ['elu'],
+    'seed': [42], 
+    'pre_split_path': ['split_datasets/'],      # Path of data splits            
+    'loda_split':[True],      # If load split prepared
+    'device': [0],
+    'num_heads': [3], # number of hidden attention heads
+    'optimizer': ['adam'],
+    'n_hid': [64],
+    'norm': [[]],  #TODO Type of Normalization: 
+    'drop':[[0.5, 0]], # [drop_out_ratio, drop_edge_ratio]
+    'layer_emb': [True], # If add layer embedding for PSNR
+    'if_mv': [False], # If adapt the missing vector setting
+    'if_early_stop': [True],
+    'split_type': ['semi'], # Type of Datasets splits: 'semi' for classical, 'hetero' for train:val:test = 6:2:2, 'full' for train:val:test = 2:2:6
+    'n_layers': [2, 4, 8, 16, 32, 64],
+    'lr': [1e-2, 1e-3], # learning rate
+    'residual_type': ['psnr'],
+    'weight_decay': [5e-4],
+    'dataset': ['cora', 'citeseer', 'pubmed', 'coauther_cs', 'coauther_phy', 'amazon_photo'],
+    'coef_encoder': ['mlp'],
+}
 
-        # Hyperparameters Under Optimization
-        'n_layers': {'values': [2,4,8,16,32,64]},
-        'lr': {'values': [1e-2,1e-3]}, # learning rate
-        'weight_decay': {'values': [5e-4]},
+project_name = 'baseline'
+
+results_table = pd.DataFrame(columns = list(sweep_config.keys()) + ['final_acc', 'final_acc_std', 'val_acc', 'val_acc_std'])
+parser = argparse.ArgumentParser()
+args = parser.parse_args()
+
+print(project_name)
+
+# i = 0
+for values in itertools.product(*sweep_config.values()):
+
+    params = dict(zip(sweep_config.keys(), values))
+        
+    for key, value in params.items():
+        setattr(args, key, value)
+
+    
+    final_acc, final_acc_std, val_acc, val_acc_std = main(args)
+    
+    result = args.__dict__.copy()
+    result.update({
+        'final_acc': final_acc, 
+        'final_acc_std': final_acc_std, 
+        'val_acc': val_acc, 
+        'val_acc_std': val_acc_std
     })
-
-    return args
-
-if __name__ == "__main__":
-    project_name = 'cora'
-    # wandb.login(
-    #     host='https://api.wandb.ai',
-    #     key='79bd072f9b61735f983f9da5acbd2b78383c4268',
-    # )
-    wandb.login(
-    host='https://api.wandb.ai',
-    key='aa45b3ed8e0b4f2ad798b9e7fd687c3be8d8cf50',
-    )
-    sweep_config = build_wandb_args()
-    sweep_id = wandb.sweep(sweep_config, project=project_name)
-    wandb.agent(sweep_id, main, count=1)
-
-
+    results_table = results_table._append(result, ignore_index = True)
+    results_table.to_csv(project_name + '.csv', index=True)

@@ -69,36 +69,30 @@ def train(model, graph, optimizer, max_epoch, if_mv, if_early_stop):
 
 
 def main(args):
-
     device = "cuda:" + str(args.device) if args.device >= 0 else "cpu"
     graph, (num_features, num_classes, num_node) = load_dataset(args.dataset, args)
-    args.num_features = num_features
+    args.num_features = num_features 
 
-    if args.loda_split:
-        filename = os.path.join(args.pre_split_path, args.dataset + '_splits.npy')
-        splits_list = np.load(filename)
-    else:
-        splits_list = split_datasets(graph.ndata["label"])
-        if not os.path.exists(args.pre_split_path):
-            os.makedirs(args.pre_split_path)
-        np.save(os.path.join(args.pre_split_path, args.dataset + '_splits.npy'), splits_list)        
-
+    # return
     graph = graph.to(device)    
-    set_random_seed(args.seed)
     acc_list = []
     val_acc_list = []
     
-    for i in range(splits_list.shape[0]):
-        split = splits_list[i]
-        train_idx = torch.tensor(np.where(split == 0, True, False)).to(device)
-        test_idx = torch.tensor(np.where(split == 1, True, False)).to(device)
-        val_idx = torch.tensor(np.where(split == 2, True, False)).to(device)
-
-        graph.ndata["train_mask"] = train_idx
-        graph.ndata["test_mask"] = test_idx
-        graph.ndata["val_mask"] = val_idx
-    
-        model = BuildModel(args.backbone, num_features, args.n_hid, num_classes, args.n_layers, args.activation, args.norm, args.drop, args.residual_type, num_node).build(args)
+    for i, seed in enumerate(args.seeds):
+        set_random_seed(seed)        
+        model = BuildModel(
+            args.backbone, 
+            num_features, 
+            args.n_hid, 
+            num_classes, 
+            args.n_layers, 
+            args.activation, 
+            args.norm, 
+            args.drop, 
+            args.residual_type, 
+            num_node
+        ).build(args)
+        
         model = model.to(device)
         optimizer = create_optimizer(args.optimizer, model, args.lr, args.weight_decay)
 

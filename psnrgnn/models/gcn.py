@@ -18,7 +18,7 @@ class GCN(nn.Module):
         # Conv Layers
         self.convs = nn.ModuleList()
         self.in_fc = nn.Linear(nfeat, nhid)
-        if self.residual not in ['snr']:
+        if self.residual not in ['psnr']:
             self.convs.append(GraphConv(nhid, nhid))
         else:
             self.convs.append(GraphConv(nfeat, nhid))
@@ -33,12 +33,12 @@ class GCN(nn.Module):
         for conv in self.convs:
             conv.reset_parameters()
         self.out_fc.reset_parameters()
-        if self.residual not in ['snr']:
+        if self.residual not in ['psnr']:
             self.in_fc.reset_parameters()
 
     def forward(self, graph, h):
         self.hidden_list = []
-        if self.residual not in ['snr']:
+        if self.residual not in ['psnr']:
             graph, h = self.data_process.drop(graph, h, self.training)
             h = self.in_fc(h)
             h = self.data_process.normalization(h)
@@ -47,8 +47,8 @@ class GCN(nn.Module):
 
         graph, h = self.data_process.drop(graph, h, self.training)
         h = self.convs[0](graph, h)
-        if self.residual not in ['snr']:
-            h = self.data_process.residual(self.hidden_list, h, 0,graph)
+        if self.residual not in ['psnr']:
+            h = self.data_process.residual(self.hidden_list, h, 0, graph)
         h = self.data_process.normalization(h)
         h = self.data_process.activation(h)
         self.hidden_list.append(h)
@@ -58,6 +58,8 @@ class GCN(nn.Module):
             h = self.convs[i](graph, h)
             h = self.data_process.residual(self.hidden_list, h, i, graph)
             h = self.data_process.normalization(h)
+            self.hidden_list.append(h)
+  
 
         h = self.out_fc(h)
         h = F.log_softmax(h, dim=1)

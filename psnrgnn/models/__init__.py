@@ -4,8 +4,6 @@ import torch
 import torch.nn as nn
 from .gcn import GCN
 from .gat import GAT
-from .sage import GraphSage
-
 
         
 
@@ -27,8 +25,6 @@ class BuildModel():
         if self.model_name == 'gcn':
             return gcn.GCN(self.nfeat, self.nhid, self.nclass, self.num_layers, self.activation, self.norm, self.drop, self.residual, self.num_node, args)
         if self.model_name == 'gat':
-            #TODO            
-            pass
-        if self.model_name == 'sage':
-            #TODO
-            pass
+            return gat.GAT(self.nfeat, self.nhid, self.nclass, self.num_layers, self.activation, self.norm, self.drop, self.residual, self.num_node, args)
+
+        

@@ -4,23 +4,34 @@ import torch
 import torch.nn as nn
 import dgl
 import pdb
-from dgl.nn import GATConv,GraphConv
+from dgl.nn import GATConv,GraphConv,SAGEConv   
 import math
 import torch
 
 import torch.nn as nn
+        
+    
 
-
-
-
-class SNRModule(nn.Module):
-    def __init__(self, nodes_num, args):
+class PSNRModule(nn.Module):
+    def __init__(self, nodes_num, n_hid, args):
         super().__init__()
         self.nodes_num =  nodes_num
+        self.coef_encoder_type = args.coef_encoder
 
-        self.gat_coff = GATConv(args.n_hid, 2, num_heads = 1)
+        if args.coef_encoder == 'gat':
+            self.coef_encoder = GATConv(n_hid, 2, num_heads = 1)
+        if args.coef_encoder == 'sage':
+            self.coef_encoder = SAGEConv(n_hid, 2, 'gcn')
+        if args.coef_encoder == 'gcn':
+            self.coef_encoder = GraphConv(n_hid, 2)
+        if args.coef_encoder == 'mlp':
+            self.coef_encoder = nn.Sequential(
+                nn.Linear(n_hid, n_hid),
+                nn.ReLU(),
+                nn.Linear(n_hid, 2)
+            ) 
 
-        self.d_model = args.n_hid
+        self.d_model = n_hid
         self.max_seq_len = args.n_layers +  3
 
         pe = torch.zeros(self.max_seq_len, self.d_model)
@@ -32,22 +43,35 @@ class SNRModule(nn.Module):
 
         self.pe = pe
         self.pe_coff = nn.Parameter(torch.tensor(0.1))
+        self.layer_emb = args.layer_emb
 
     def forward(self, graph, input, t):
+
+        # for inductive 
+        self.nodes_num = input.shape[0]
 
         x  = torch.randn(self.nodes_num,1)
         y = torch.ones(self.nodes_num,1)
         x = x.to(graph.device)
         y = y.to(graph.device)
+        
+        if self.layer_emb:
+            input = input + self.pe_coff*self.pe[t+1].to(input.device)
 
-        input = input + self.pe_coff*self.pe[t+1].to(input.device)
-        coff_gat = self.gat_coff(graph, input)
-        coff_gat = torch.mean(coff_gat, dim=1)
-        std = F.relu(coff_gat[:,0])
-        mean = F.relu(coff_gat[:,1])
+        if self.coef_encoder_type == 'mlp':
+            coef = self.coef_encoder(input)
+        else:
+            coef = self.coef_encoder(graph, input)
+            if self.coef_encoder_type == 'gat':
+                coef = torch.mean(coef, dim=1)
+
+        std = F.relu(coef[:,0])
+        mean = F.relu(coef[:,1])
         std = std.view(-1,1)
         mean = mean.view(-1,1)
+
         return input * (F.sigmoid(x * std + y*mean))
+
 
 
 class DataProcess(nn.Module):
@@ -61,15 +85,10 @@ class DataProcess(nn.Module):
         self.drop_list = Drop
         self.act_type = Activation
 
-        if self.res_type == "dense":
-            self.linear = nn.ModuleList()
-            for i in range(self.nlayers):
-                self.linear.append(nn.Linear((i+2)*nhid,nhid))
-        if self.res_type == "jk":
-            self.linear = nn.Linear(self.nlayers * nhid,nhid)
-        if self.res_type == "snr":
-            self.SnrList = nn.ModuleList()
-            self.SnrList.append(SNRModule(nodes_num, args))
+        if self.res_type == "psnr":
+            self.PsnrList = nn.ModuleList()
+            self.PsnrList.append(PSNRModule(nodes_num, nhid, args))
+
 
 
         self.NormList = nn.ModuleList()
@@ -79,26 +98,13 @@ class DataProcess(nn.Module):
             self.NormList.append(nn.LayerNorm(nhid))
 
     def residual(self, hidden_list, x, layer, graph):
-        if self.res_type == 'res':
-            return hidden_list[-1] + x
-        if self.res_type == 'init_res':
-            return hidden_list[0] + x
-        if self.res_type == 'dense':
-            for i in range(layer+1):
-                x = torch.cat([x, hidden_list[i]], dim=1)
-            return self.linear[layer](x)
-        if self.res_type == 'jk':
-            if layer == self.nlayers - 1:
-                for i in range(0, self.nlayers):
-                    x = torch.cat([x, hidden_list[i]], dim=1)
-                return self.linear(x)
-        
-        if self.res_type == 'snr':
-            return hidden_list[0] + self.SnrList[0](graph, hidden_list[0] - x, layer-1)
+        if self.res_type == 'psnr':
+            return hidden_list[0] + self.PsnrList[0](graph, hidden_list[0] - x, layer - 1)
         
         if self.res_type == 'none':
             return x
 
+        
     def drop(self, g, x, training):
         """
         drop_list: [drop_out_ratio,drop_edge_ratio]
@@ -107,7 +113,7 @@ class DataProcess(nn.Module):
             x = F.dropout(x, p=self.drop_list[0], training=training)
         if self.drop_list[1] != 0.0 and training:
             g = DropEdge(self.drop_list[1])(g)
-            g = dgl.add_self_loop(g)
+            g = dgl.add_self_loop(g)                        #TODO
 
         return g, x
     
