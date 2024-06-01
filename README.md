@@ -2,7 +2,7 @@
 
 Develop a node-adaptive residual module for deep graph neural network via posteriori sampling that alleviates over-smoothing.
 
-![PSNR_Arc & Exp](fig\PSNR_Arc & Exp.svg)
+![PSNR_Arc & Exp](fig/PSNR_Arc & Exp.svg)
 
 # Installation
 
